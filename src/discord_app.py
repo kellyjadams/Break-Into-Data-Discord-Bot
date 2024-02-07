@@ -1,6 +1,6 @@
 import asyncio
 import os
-from attr import dataclass
+from dataclasses import dataclass
 from datetime import datetime
 
 import dotenv
