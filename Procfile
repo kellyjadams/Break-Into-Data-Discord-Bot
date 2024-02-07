@@ -1,1 +1,1 @@
-web: python -m src.discord_app
+worker: python -m src.discord_app
