@@ -74,13 +74,15 @@ async def new_submission(user_id, goal_id, proof_url, amount) -> Submission:
         return submission
 
 
-async def new_goal(user_id, category_id, metric, target) -> Goal:
+async def new_goal(user_id, category_id,goal_description, metric, target, frequency) -> Goal:
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(Goal).values(
             user_id=user_id,
-            category_id=category_id,
+            category_id=category_id, 
+            goal_description=goal_description,
             metric=metric,
             target=target,
+            frequency=frequency,
         ).returning(Goal))
 
         goal = cursor.fetchone()

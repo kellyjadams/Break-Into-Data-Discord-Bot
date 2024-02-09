@@ -55,6 +55,9 @@ class Goal(Base):
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
     category_id = Column(Integer, ForeignKey('categories.category_id'))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    goal_description = Column(String)
+    frequency = Column(String)
     metric = Column(String)
     target = Column(Float)
     active = Column(Boolean, default=True)

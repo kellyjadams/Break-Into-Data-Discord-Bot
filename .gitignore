@@ -1,4 +1,5 @@
 venv/
+myvenv
 .DS_Store
 server.py
 __pycache__/

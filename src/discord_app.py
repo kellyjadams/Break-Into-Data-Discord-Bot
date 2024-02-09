@@ -2,7 +2,7 @@ import asyncio
 import os
 from dataclasses import dataclass
 from datetime import datetime
-
+import json 
 import dotenv
 import discord
 from discord import app_commands
@@ -23,9 +23,10 @@ from src.analytics.leaderboard import get_weekly_leaderboard
 from src.analytics.personal import get_personal_statistics
 
 dotenv.load_dotenv()
-
+PYTHON_MODE = os.getenv('PYTHON_MODE') 
 DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-SETTINGS_CHANNEL_ID = os.getenv('DISCORD_SETTINGS_CHANNEL_ID')
+SETTINGS_CHANNEL_ID = os.getenv('DISCORD_SETTINGS_CHANNEL_ID') if PYTHON_MODE == 'production' \
+                                                    else os.getenv('TEST_DISCORD_SETTINGS_CHANNEL_ID')
 GENERAL_CHANNEL_ID = os.getenv('DISCORD_GENERAL_CHANNEL_ID')
 DISCORD_SERVER_ID = os.getenv('DISCORD_SERVER_ID')
 
@@ -37,19 +38,38 @@ client = discord.Client(
 @dataclass
 class Track:
     name: str
-    default_tracking_value: str
-    default_daily_target: int
+
+    questions_needed: list
+    default_tracking_metric: str
+    default_daily_target: str
 
 
 TRACKS = {
     track.name: track for track in [
-        Track(name="Fitness", default_tracking_value="Minutes / Number of pushups", default_daily_target=30),
-        Track(name="Leetcode", default_tracking_value="Minutes spent / Number of problems solved", default_daily_target=3),
-        Track(name="Studying", default_tracking_value="Minutes spent", default_daily_target=60),
-        Track(name="Other", default_tracking_value="Smiles", default_daily_target=10),
+        Track(name="Fitness", 
+              questions_needed=['description', 'metric', 'target', 'frequency'],
+              default_tracking_metric="e.g. miles, minutes ", 
+              default_daily_target='e.g.30 min'),
+        Track(name="Leetcode", 
+              questions_needed=['target'],
+              default_tracking_metric="e.g. count number", default_daily_target='e.g. 3 or 5'),
+        Track(name="Studying", 
+              questions_needed=['target'],
+              default_tracking_metric="e.g. minutes, hours", default_daily_target='60 or 2'),
+        Track(name="Meditation",
+              questions_needed=['target'],
+              default_tracking_metric="e.g. minutes, hours", 
+              default_daily_target='60 or 2'),
+        Track(name="Content Creation",
+              questions_needed=['description', 'target', 'frequency'],
+              default_tracking_metric="e.g. number of posts/videos", default_daily_target='1 or 2'),
+        Track(name="Other", 
+              questions_needed=['description', 'metric', 'target', 'frequency'],
+              default_tracking_metric="Smiles", default_daily_target=10),
     ]
 }
 
+#This creates a view with the buttons for each track
 
 class TrackSettingsView(discord.ui.View):
     def __init__(self):
@@ -63,6 +83,11 @@ class TrackSettingsView(discord.ui.View):
         self.add_item(btn)
 
     async def interaction_check(self, interaction: discord.Interaction):
+
+        print(interaction)
+        print(interaction.type)
+    
+        print(discord.InteractionType.component)
         if not interaction.type == discord.InteractionType.component:
             return False
         track = TRACKS.get(interaction.data['custom_id'])
@@ -75,23 +100,55 @@ class TrackSettingsView(discord.ui.View):
 
         return True
 
+#This adds user's inputs in the goals table 
 
 class TrackSettingsModal(discord.ui.Modal):
     def __init__(self, track: Track):
         super().__init__(title=track.name)
 
         self.track = track
+        print(track.questions_needed)
 
-        self.track_input = discord.ui.TextInput(
-            label="What would you like to track?", 
-            placeholder=track.default_tracking_value)
-        self.add_item(self.track_input)
+        if 'description' in track.questions_needed:
+            # New field for their
+            self.description_input = discord.ui.TextInput(
+                label="Description",
+                required=False,
+                placeholder="Describe your goal in few words")
+            self.add_item(self.description_input)
 
-        self.daily_target_input = discord.ui.TextInput(
-            label="What's your daily target?",
-            placeholder=f"{track.default_daily_target} [must be a number]")
-        self.add_item(self.daily_target_input)
 
+        if 'metric' in track.questions_needed:
+            self.metric_input = discord.ui.TextInput(
+                label="What is your metric?", 
+                placeholder=track.default_tracking_metric)
+            self.add_item(self.metric_input)
+
+
+        target_map = {
+            'Leetcode': 'How many problems per day do you want to do?',
+            'Meditation': 'How many mins per day do you want to meditate?',
+            'Fitness': 'How much exercise do you want to do?',
+            'Studying': 'How many mins per day do you want to study?',
+            'Content Creation': 'How much content do you want to make (per day or per week)'
+        }
+
+        if 'target' in track.questions_needed:
+            self.daily_target_input = discord.ui.TextInput(
+                label=target_map[track.name],
+                placeholder=f"{track.default_daily_target} [must be a number]")
+            self.add_item(self.daily_target_input)
+
+        # New field for frequency 
+
+        if 'frequency' in track.questions_needed:
+            self.frequency_input = discord.ui.TextInput(
+                label="What is the frequency? ",
+                placeholder="(daily or weekly)")
+            self.add_item(self.frequency_input)
+
+
+#This makes sure the user input a number and not a string
     async def on_submit(self, interaction: discord.Interaction):
         try:
             daily_target = int(self.daily_target_input.value)
@@ -108,16 +165,20 @@ class TrackSettingsModal(discord.ui.Modal):
         # TODO: get category by track
         category = await get_category_by_name(self.track.name)
 
+
         if category is None:
             await interaction.followup.send(
                 "Something went wrong, please try later", ephemeral=True)
             return
         
+        
         await new_goal(
             user_id=user.user_id,
             category_id=category.category_id,
-            metric=self.track_input.value,
+            goal_description=self.description_input.value if 'description' in self.track.questions_needed else '',
+            metric=self.metric_input.value if 'metric' in self.track.questions_needed else self.track.name,
             target=daily_target,
+            frequency=self.frequency_input.value if 'frequency' in self.track.questions_needed else 'daily'
         )
         
         await interaction.followup.send(f"Your settings were updated!", ephemeral=True)
@@ -159,6 +220,7 @@ async def on_message(message):
                 proof_url=attchemnt.url,
                 amount=0,
             )
+
 
 
 # map from a user to it's voice channel join time
@@ -274,24 +336,27 @@ async def stats_command(interaction):
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():
     # TODO: run every hour, but send only after 24 hours from the last report
-    print("Sending weekly leaderboard")
-    leaderboards = await get_weekly_leaderboard()
+    # Leaderboard task only runs in production on Heroku
+    should_run = os.getenv('PYTHON_MODE') == 'production'
+    if should_run:
+        print("Sending weekly leaderboard")
+        leaderboards = await get_weekly_leaderboard()
 
-    current_date = datetime.now().strftime("%d-%b-%Y")
+        current_date = datetime.now().strftime("%d-%b-%Y")
 
-    msg_parts = [f"**Weekly leaderboard: {current_date}**\n"]
+        msg_parts = [f"**Weekly leaderboard: {current_date}**\n"]
 
-    for category, leaderboard in leaderboards.items():
-        msg_parts.append(f"**{category}**")
-        for user_id, submissions, days in leaderboard:
-            username = (await client.fetch_user(user_id)).global_name
-            msg_parts.append(f"{username}: {submissions} submissions, {days} active days")
-        msg_parts.append("")
+        for category, leaderboard in leaderboards.items():
+            msg_parts.append(f"**{category}**")
+            for user_id, submissions, days in leaderboard:
+                username = (await client.fetch_user(user_id)).global_name
+                msg_parts.append(f"{username}: {submissions} submissions, {days} active days")
+            msg_parts.append("")
 
-    msg = "\n".join(msg_parts)
+        msg = "\n".join(msg_parts)
 
-    channel = await client.fetch_channel(GENERAL_CHANNEL_ID)
-    await channel.send(msg)
+        channel = await client.fetch_channel(GENERAL_CHANNEL_ID)
+        await channel.send(msg)
 
 
 async def init():
