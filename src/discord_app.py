@@ -7,6 +7,7 @@ import dotenv
 import discord
 from discord import app_commands
 from discord.ext import tasks
+from src.onboarding import OnboardingView
 
 from src.database import (
     get_category_by_name,
@@ -84,10 +85,10 @@ class TrackSettingsView(discord.ui.View):
 
     async def interaction_check(self, interaction: discord.Interaction):
 
-        print(interaction)
-        print(interaction.type)
+        #print(interaction)
+        #print(interaction.type)
     
-        print(discord.InteractionType.component)
+        #print(discord.InteractionType.component)
         if not interaction.type == discord.InteractionType.component:
             return False
         track = TRACKS.get(interaction.data['custom_id'])
@@ -107,7 +108,7 @@ class TrackSettingsModal(discord.ui.Modal):
         super().__init__(title=track.name)
 
         self.track = track
-        print(track.questions_needed)
+        #print(track.questions_needed)
 
         if 'description' in track.questions_needed:
             # New field for their
@@ -127,10 +128,10 @@ class TrackSettingsModal(discord.ui.Modal):
 
         target_map = {
             'Leetcode': 'How many problems per day do you want to do?',
-            'Meditation': 'How many mins per day do you want to meditate?',
+            'Meditation': 'Meditation mins per day?',
             'Fitness': 'How much exercise do you want to do?',
             'Studying': 'How many mins per day do you want to study?',
-            'Content Creation': 'How much content do you want to make (per day or per week)'
+            'Content Creation': 'Daily/Weekly Content Goal?'
         }
 
         if 'target' in track.questions_needed:
@@ -331,6 +332,16 @@ async def stats_command(interaction):
     msg = "\n".join(msg_parts)
 
     await interaction.followup.send(msg, ephemeral=False)
+
+
+@tree.command(
+        name="backfill",
+        description="To get existing users name and email",
+        guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+async def backfill(interaction):
+    view = OnboardingView()
+    await interaction.response.send_message("Click the button below:", view=view, ephemeral=False)
 
 
 @tasks.loop(hours=24)
