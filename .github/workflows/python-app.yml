@@ -30,3 +30,8 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+      env:
+        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        DISCORD_SERVER_ID: ${{ secrets.DISCORD_SERVER_ID }}
+        DISCORD_SETTINGS_CHANNEL: ${{ secrets.DISCORD_SETTINGS_CHANNEL }}
+        DISCORD_GENERAL_CHANNEL: ${{ secrets.DISCORD_GENERAL_CHANNEL }}
