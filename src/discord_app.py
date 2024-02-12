@@ -23,11 +23,11 @@ from src.analytics.leaderboard import get_weekly_leaderboard
 from src.analytics.personal import get_personal_statistics
 
 dotenv.load_dotenv()
-#PYTHON_MODE = os.environ['PYTHON_MODE'] 
-DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
-SETTINGS_CHANNEL_ID = os.environ['DISCORD_SETTINGS_CHANNEL_ID']
-GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
-DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
+
+DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+SETTINGS_CHANNEL_ID = os.getenv('DISCORD_SETTINGS_CHANNEL_ID')
+GENERAL_CHANNEL_ID = os.getenv('DISCORD_GENERAL_CHANNEL_ID')
+DISCORD_SERVER_ID = os.getenv('DISCORD_SERVER_ID')
 
 client = discord.Client(
     intents=discord.Intents.all(),
