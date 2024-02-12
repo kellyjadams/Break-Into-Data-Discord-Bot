@@ -1,7 +1,9 @@
 venv/
 myvenv
+myenv
 .DS_Store
 server.py
 __pycache__/
 .vscode
 .env
+meri_discord/
