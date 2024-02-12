@@ -28,7 +28,7 @@ dotenv.load_dotenv()
 DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 SETTINGS_CHANNEL_ID = os.getenv('DISCORD_SETTINGS_CHANNEL_ID')
 GENERAL_CHANNEL_ID = os.getenv('DISCORD_GENERAL_CHANNEL_ID')
-DISCORD_SERVER_ID = os.getenv('DISCORD_SERVER_ID') or '0'
+DISCORD_SERVER_ID = os.getenv('DISCORD_SERVER_ID')
 
 client = discord.Client(
     intents=discord.Intents.all(),
