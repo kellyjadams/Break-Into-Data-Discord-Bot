@@ -1,6 +1,6 @@
-import pytest
 import asyncio
 from unittest.mock import AsyncMock
+import pytest
 from src.discord_app import init, client
 
 @pytest.mark.asyncio
@@ -20,7 +20,8 @@ async def test_bot_starts(mocker):
     mocker.patch('discord.Client.fetch_channel', return_value=mock_channel)
 
     # Mock environment variables if needed
-    mocker.patch('os.getenv', side_effect=lambda key: 'fake_token' if key == 'DISCORD_BOT_TOKEN' else 'fake_id')
+    mocker.patch('os.getenv', side_effect=lambda
+                 key: 'fake_token' if key == 'DISCORD_BOT_TOKEN' else 'fake_id')
 
 
     # Start the bot in a background task

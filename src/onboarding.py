@@ -27,7 +27,8 @@ class OnboardingModal(discord.ui.Modal):
 
 class OnboardingButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Submit Your Info", style=discord.ButtonStyle.secondary, custom_id="submit_info")
+        super().__init__(label="Submit Your Info", 
+                         style=discord.ButtonStyle.secondary, custom_id="submit_info")
 
     async def callback(self, interaction: discord.Interaction):
         modal = OnboardingModal()

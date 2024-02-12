@@ -2,7 +2,6 @@ import asyncio
 import os
 from dataclasses import dataclass
 from datetime import datetime
-import json
 import dotenv
 import discord
 from discord import app_commands
@@ -183,7 +182,7 @@ class TrackSettingsModal(discord.ui.Modal):
             frequency=self.frequency_input.value if 'frequency' in self.track.questions_needed else 'daily'
         )
 
-        await interaction.followup.send(f"Your settings were updated!", ephemeral=True)
+        await interaction.followup.send("Your settings were updated!", ephemeral=True)
 
 
 @client.event
@@ -307,7 +306,7 @@ async def submit_command(interaction, amount: int):
         amount=amount,
     )
 
-    await interaction.followup.send(f"Your progress is saved!", ephemeral=True)
+    await interaction.followup.send("Your progress is saved!", ephemeral=True)
 
 
 @tree.command(
