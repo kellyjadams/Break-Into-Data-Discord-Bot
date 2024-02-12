@@ -48,19 +48,19 @@ TRACKS = {
         Track(name="Fitness", 
               questions_needed=['description', 'metric', 'target', 'frequency'],
               default_tracking_metric="e.g. miles, minutes ", 
-              default_daily_target='e.g.30 min'),
-        Track(name="Leetcode", 
-              questions_needed=['target'],
+              default_daily_target='e.g.30'),
+        Track(name="Coding", 
+              questions_needed=['target', 'frequency'],
               default_tracking_metric="e.g. count number", default_daily_target='e.g. 3 or 5'),
         Track(name="Studying", 
-              questions_needed=['target'],
+              questions_needed=['target', 'frequency'],
               default_tracking_metric="e.g. minutes, hours", default_daily_target='60 or 2'),
         Track(name="Meditation",
-              questions_needed=['target'],
+              questions_needed=['target', 'frequency'],
               default_tracking_metric="e.g. minutes, hours", 
               default_daily_target='60 or 2'),
         Track(name="Content Creation",
-              questions_needed=['description', 'target', 'frequency'],
+              questions_needed=['description', 'frequency'],
               default_tracking_metric="e.g. number of posts/videos", default_daily_target='1 or 2'),
         Track(name="Other", 
               questions_needed=['description', 'metric', 'target', 'frequency'],
@@ -124,17 +124,18 @@ class TrackSettingsModal(discord.ui.Modal):
 
 
         target_map = {
-            'Leetcode': 'How many problems per day do you want to do?',
-            'Meditation': 'How many mins per day do you want to meditate?',
-            'Fitness': 'How much exercise do you want to do?',
-            'Studying': 'How many mins per day do you want to study?',
-            'Content Creation': 'How much content do you want to make (per day or per week)'
+            'Coding': 'Daily coding challege goals? 1, 3, 5 problems',
+            'Meditation': 'Set your meditation goal in mins.',
+            'Fitness': 'What is your exercise target?',
+            'Studying': 'Set your study goal in mins.',
+            'Content Creation': 'How much content to make (daily or weekly)',
+            'Other': 'Set your Number to measure.'
         }
 
         if 'target' in track.questions_needed:
             self.daily_target_input = discord.ui.TextInput(
                 label=target_map[track.name],
-                placeholder=f"{track.default_daily_target} [must be a number]")
+                placeholder=f"{track.default_daily_target} [it must be a number]")
             self.add_item(self.daily_target_input)
 
         # New field for frequency 
@@ -142,7 +143,7 @@ class TrackSettingsModal(discord.ui.Modal):
         if 'frequency' in track.questions_needed:
             self.frequency_input = discord.ui.TextInput(
                 label="What is the frequency? ",
-                placeholder="(daily or weekly)")
+                placeholder="e.g. 4 [For 4 times a week] ")
             self.add_item(self.frequency_input)
 
 
