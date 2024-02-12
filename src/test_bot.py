@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from src.discord_app import init, client 
+from src.discord_app import init, client
 
 @pytest.mark.asyncio
 async def test_bot_starts():

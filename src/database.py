@@ -39,7 +39,7 @@ async def clean_database():
     if input("Are you sure you want to drop everything? (y/n) ") != 'y':
         print('Skipping')
         return
-    
+
     async with DB_ENGINE.begin() as conn:
         print()
         print(await conn.execute(delete(Submission)))
@@ -78,7 +78,7 @@ async def new_goal(user_id, category_id,goal_description, metric, target, freque
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(Goal).values(
             user_id=user_id,
-            category_id=category_id, 
+            category_id=category_id,
             goal_description=goal_description,
             metric=metric,
             target=target,
@@ -139,7 +139,7 @@ async def get_submission_leaderboard():
 async def select_raw(query, **params):
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(text(query), params)).fetchall()
-    
+
 
 @alru_cache()
 async def get_categories():

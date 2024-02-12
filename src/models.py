@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import (
-    Column, Integer, String, DateTime, 
+    Column, Integer, String, DateTime,
     Float, Boolean, ForeignKey, BigInteger
 )
 from sqlalchemy.orm import relationship
