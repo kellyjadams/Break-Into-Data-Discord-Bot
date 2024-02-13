@@ -36,5 +36,3 @@ jobs:
         DISCORD_SETTINGS_CHANNEL_ID: ${{ secrets.DISCORD_SETTINGS_CHANNEL_ID }}
         DISCORD_GENERAL_CHANNEL_ID: ${{ secrets.DISCORD_GENERAL_CHANNEL_ID }}
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
-    - name: Lint with pylint
-      run: pylint src

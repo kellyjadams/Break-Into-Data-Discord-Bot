@@ -137,22 +137,22 @@ class TrackSettingsModal(discord.ui.Modal):
         if 'target' in track.questions_needed:
             self.daily_target_input = discord.ui.TextInput(
                 label=target_map[track.name],
-                placeholder=f"{track.default_daily_target} [it must be a number]")
+                placeholder=f"{track.default_daily_target} (it must be a number)")
             self.add_item(self.daily_target_input)
 
         # New field for frequency
 
         if 'frequency' in track.questions_needed:
             self.frequency_input = discord.ui.TextInput(
-                label="What is the frequency? ",
-                placeholder="e.g. 4 [For 4 times a week] ")
+                label="What is the frequency per week? ",
+                placeholder="e.g. 4, 5 (times a week) ")
             self.add_item(self.frequency_input)
 
 
 #This makes sure the user input a number and not a string
     async def on_submit(self, interaction: discord.Interaction):
         try:
-            daily_target = int(self.daily_target_input.value)
+            daily_target = int(self.daily_target_input.value.strip())
         except ValueError:
             await interaction.response.send_message(
                 "Daily target must be a valid number, please try again",

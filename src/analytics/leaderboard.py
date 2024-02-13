@@ -34,6 +34,6 @@ async def get_weekly_leaderboard():
         leaderboard = await _get_category_leaderboard(category.category_id)
         leaderboards[category.name] = leaderboard
 
-    print(leaderboards)
+    #print(leaderboards)
 
     return leaderboards
