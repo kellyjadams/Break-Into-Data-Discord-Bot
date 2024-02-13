@@ -8,7 +8,7 @@ async def _get_category_leaderboard(category_id: int):
             FROM submissions s
             JOIN goals g ON s.goal_id = g.goal_id
             WHERE s.created_at > now() - interval '1 week' AND g.category_id = :category_id
-            GROUP BY s.user_id, DATE(s.created_at)  
+            GROUP BY s.user_id, DATE(s.created_at)
             ORDER BY count(*) DESC
     """, category_id=category_id)
 
@@ -35,5 +35,5 @@ async def get_weekly_leaderboard():
         leaderboards[category.name] = leaderboard
 
     print(leaderboards)
-    
+
     return leaderboards

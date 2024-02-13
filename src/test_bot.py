@@ -16,3 +16,4 @@ async def test_bot_starts():
     # Close the bot after the test
     await client.close()
     await bot_task
+    
