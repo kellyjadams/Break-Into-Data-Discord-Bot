@@ -7,9 +7,9 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from src.database import get_categories
 
 from src.models import Goal
+from src.database import get_categories
 
 
 load_dotenv()
