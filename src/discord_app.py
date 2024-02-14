@@ -1,5 +1,6 @@
 import asyncio
 import os
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 import dotenv
@@ -151,6 +152,7 @@ class TrackSettingsModal(discord.ui.Modal):
 
 #This makes sure the user input a number and not a string
     async def on_submit(self, interaction: discord.Interaction):
+        logging.info(f'Goal submission attempt by {interaction.user}')
         try:
             daily_target = int(self.daily_target_input.value.strip())
         except ValueError:
@@ -183,11 +185,12 @@ class TrackSettingsModal(discord.ui.Modal):
         )
 
         await interaction.followup.send("Your settings were updated!", ephemeral=True)
+        logging.info(f'Goal successfully updated for user {interaction.user}')
 
 
 @client.event
 async def on_ready():
-    print(f'Logged in as {client.user}')
+    logging.info(f'Logged in as {client.user}')
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
 
@@ -236,8 +239,10 @@ async def process_voice_channel_activity(member, before, after):
 
     if member_joins_channel:
         VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.utcnow()
+        logging.debug(f'Voice channel activity: {member} joined {after.channel.name}')
 
     if member_leaves_channel:
+        logging.debug(f'Voice channel activity: {member} left {before.channel.name}')
         time_joined = VOICE_CHANNELS_JOIN_TIME.pop(user.user_id, None)
         if time_joined is None:
             return
@@ -265,6 +270,9 @@ async def on_voice_state_update(member, before, after):
     print(member, before, after)
     await process_voice_channel_activity(member, before, after)
 
+@client.event
+async def on_error(event, *args, **kwargs):
+    logging.error(f'Unhandled error in {event}:', exc_info=True)
 
 tree = app_commands.CommandTree(client)
 
@@ -274,6 +282,7 @@ tree = app_commands.CommandTree(client)
     guild=discord.Object(id=DISCORD_SERVER_ID),
 )
 async def submit_command(interaction, amount: int):
+    logging.info(f'Processing submit command from {interaction.user}')
     # TODO: handle database errors
 
     await interaction.response.defer(thinking=True, ephemeral=True)
@@ -306,6 +315,7 @@ async def submit_command(interaction, amount: int):
         amount=amount,
     )
 
+    logging.debug(f'Submit command processed for {interaction.user}')
     await interaction.followup.send("Your progress is saved!", ephemeral=True)
 
 
@@ -348,7 +358,7 @@ async def backfill(interaction):
 async def send_weekly_leaderboard():
     # TODO: run every hour, but send only after 24 hours from the last report
     # Leaderboard task only runs in production on Heroku
-    print("Sending weekly leaderboard")
+    logging.info('Sending weekly leaderboard')
     leaderboards = await get_weekly_leaderboard()
 
     current_date = datetime.now().strftime("%d-%b-%Y")
@@ -356,19 +366,22 @@ async def send_weekly_leaderboard():
     msg_parts = [f"**Weekly leaderboard: {current_date}**\n"]
 
     for category, leaderboard in leaderboards.items():
-        msg_parts.append(f"**{category}**")
-        for user_id, submissions, days in leaderboard:
-            username = (await client.fetch_user(user_id)).global_name
-            msg_parts.append(f"{username}: {submissions} submissions, {days} active days")
-        msg_parts.append("")
+        if leaderboard:
+            msg_parts.append(f"**{category}**")
+            for user_id, submissions, days in leaderboard:
+                username = (await client.fetch_user(user_id)).global_name
+                msg_parts.append(f"{username}: {submissions} submissions, {days} active days")
+            msg_parts.append("")
 
     msg = "\n".join(msg_parts)
 
     channel = await client.fetch_channel(GENERAL_CHANNEL_ID)
     await channel.send(msg)
+    logging.info('Successfully sent weekly leaderboard')
 
 
 async def init():
+    logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:line %(lineno)d: %(message)s')
     DATABASE_URL = os.getenv('DATABASE_URL')
     if not DATABASE_URL:
         raise Exception("Please set the DATABASE_URL environment variable")
