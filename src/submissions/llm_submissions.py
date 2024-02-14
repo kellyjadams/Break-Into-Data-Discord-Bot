@@ -140,9 +140,10 @@ async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedS
     )
 
     csv_data = response.choices[0].message.content
-    csv_data = csv_data.strip('`\n')
+    csv_data = csv_data.strip('`\n').strip()
 
     items = list(csv.reader(csv_data.split('\n')))
+    items = [item for item in items if len(item) == 3]
 
     parsed_submissions = []
 

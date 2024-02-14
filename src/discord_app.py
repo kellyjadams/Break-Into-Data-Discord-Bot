@@ -224,7 +224,7 @@ async def on_message(message):
                 amount=0,
             )
 
-    if str(message.channel.id) == SUBMISSION_CHANNEL_ID:
+    if str(message.channel.id) == SUBMISSION_CHANNEL_ID and message.content:
         await process_submission_message(message)
 
 
