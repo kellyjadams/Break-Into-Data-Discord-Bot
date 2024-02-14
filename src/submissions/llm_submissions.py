@@ -1,5 +1,5 @@
-import os
 import csv
+import os
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -70,6 +70,38 @@ def _parse_value(value: str) -> Optional[int]:
         return None
 
 
+def _process_submission_item(day_shift: str, category: str, value: str, category_name_to_goal_id: dict[str, int]) -> Optional[ParsedSubmissionItem]:
+    if category == 'category':
+        # skip the header, if present
+        return None
+
+    if day_shift == '0':
+        # today
+        submission_time = datetime.now()
+    elif day_shift == '-1':
+        # yesterday
+        submission_time = (datetime.now() - timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+    else:
+        # skip old submissions
+        return None
+
+    category = category.strip()
+    value = _parse_value(value)
+
+    goal_id = category_name_to_goal_id.get(category, None)
+    if goal_id is None:
+        # skip the category that is not in the user's goals
+        return None
+
+    return ParsedSubmissionItem(
+        category=category,
+        value=value,
+        submission_time=submission_time,
+        goal_id=goal_id,
+    )
+
+
 async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedSubmissionItem]:
     categories = {
         category.category_id: category.name
@@ -115,35 +147,12 @@ async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedS
     parsed_submissions = []
 
     for day_shift, category, value in items:
-        if category == 'category':
-            # skip the header, if present
-            continue
+        submission_item = _process_submission_item(
+            day_shift, category, value, category_name_to_goal_id
+        )
 
-        if day_shift == '0':
-            # today
-            submission_time = datetime.now()
-        elif day_shift == '-1':
-            # yesterday
-            submission_time = (datetime.now() - timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0)
-        else:
-            # skip old submissions
-            continue
-
-        category = category.strip()
-        value = _parse_value(value)
-
-        goal_id = category_name_to_goal_id.get(category, None)
-        if goal_id is None:
-            # skip the category that is not in the user's goals
-            continue
-
-        parsed_submissions.append(ParsedSubmissionItem(
-            category=category,
-            value=value,
-            submission_time=submission_time,
-            goal_id=goal_id,
-        ))
+        if submission_item:
+            parsed_submissions.append(submission_item)
 
     return parsed_submissions
 

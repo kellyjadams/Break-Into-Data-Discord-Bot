@@ -6,3 +6,4 @@ discord.py==2.3.2
 #below are for testing
 pytest-asyncio
 pytest
+openai==1.12.0
