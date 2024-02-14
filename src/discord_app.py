@@ -6,7 +6,6 @@ import dotenv
 import discord
 from discord import app_commands
 from discord.ext import tasks
-from src.onboarding import OnboardingView
 
 from src.database import (
     get_category_by_name,
@@ -18,16 +17,19 @@ from src.database import (
     get_category,
     new_submission,
 )
-
 from src.analytics.leaderboard import get_weekly_leaderboard
 from src.analytics.personal import get_personal_statistics
+from src.submissions import process_submission_message
+from src.onboarding import OnboardingView
+
 
 dotenv.load_dotenv()
 
-DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-SETTINGS_CHANNEL_ID = os.getenv('DISCORD_SETTINGS_CHANNEL_ID')
-GENERAL_CHANNEL_ID = os.getenv('DISCORD_GENERAL_CHANNEL_ID')
-DISCORD_SERVER_ID = os.getenv('DISCORD_SERVER_ID')
+DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
+SETTINGS_CHANNEL_ID = os.environ['DISCORD_SETTINGS_CHANNEL_ID']
+GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
+DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
+SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 
 client = discord.Client(
     intents=discord.Intents.all(),
@@ -222,6 +224,8 @@ async def on_message(message):
                 amount=0,
             )
 
+    if str(message.channel.id) == SUBMISSION_CHANNEL_ID:
+        await process_submission_message(message)
 
 
 # map from a user to it's voice channel join time
