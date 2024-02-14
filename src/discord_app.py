@@ -382,6 +382,7 @@ async def send_weekly_leaderboard():
 
 async def init():
     logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:line %(lineno)d: %(message)s')
+    logger = logging.getLogger(__name__)
     DATABASE_URL = os.getenv('DATABASE_URL')
     if not DATABASE_URL:
         raise Exception("Please set the DATABASE_URL environment variable")
