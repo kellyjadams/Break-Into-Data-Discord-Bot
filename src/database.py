@@ -103,7 +103,6 @@ async def get_category_by_name(name) -> Optional[Category]:
         return (await conn.execute(select(Category).where(Category.name == name))).first()
 
 
-
 @alru_cache(maxsize=1000)
 async def get_category_for_voice(voice_channel) -> Optional[Category]:
     async with DB_ENGINE.begin() as conn:
@@ -120,7 +119,28 @@ async def get_user(user_id) -> Optional[User]:
 async def get_goal(category_id, user_id) -> Optional[Goal]:
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(
-            select(Goal).where(Goal.category_id == category_id).where(Goal.user_id == user_id))).first()
+            select(Goal)
+                .where(Goal.category_id == category_id)
+                .where(Goal.user_id == user_id)
+                .order_by(Goal.created_at.desc())
+        )).first()
+    
+
+async def get_user_goals(user_id):
+    async with DB_ENGINE.begin() as conn:
+        all_goals = (await conn.execute(
+            select(Goal)
+                .where(Goal.user_id == user_id)
+                .where(Goal.active == True)
+                .order_by(Goal.created_at)
+        )).fetchall()
+
+        goals_by_category = {
+            goal.category_id: goal
+            for goal in all_goals
+        }
+
+        return list(goals_by_category.values())
 
 
 async def ensure_user(discord_user) -> User:
