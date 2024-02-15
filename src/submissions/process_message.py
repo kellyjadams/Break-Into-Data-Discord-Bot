@@ -15,7 +15,7 @@ def _format_parsed_submission_item(submission_item: ParsedSubmissionItem):
         # value is unknown, the submission is boolean
         value = "✅"
 
-    return f"{submission_item.category}: {submission_item.value}"
+    return f"{submission_item.category}: {value}"
 
 
 def _format_message(submission_items: list[ParsedSubmissionItem]):
@@ -38,6 +38,8 @@ async def process_submission_message(message):
         user_goals,
     )
 
+    print(submission_items)
+
     if not submission_items:
         await message.reply("No submissions found.")
         return
@@ -51,5 +53,5 @@ async def process_submission_message(message):
             user_id=message.author.id,
             goal_id=item.goal_id,
             proof_url=None,
-            amount=item.value,
+            amount=item.value or 0,
         )

@@ -34,13 +34,13 @@ Make sure to use this schema:
 <day shift>, <category>, <value>
 Day shift is 0 for today's submission, -1 for yesterday's submission and so on.
 If no time is mentioned, then it is 0.
-Only provide metrics from the user's goals, ignore others
+Only provide metrics from the user's goals, ignore others.
 
 Possible categories: 
 {categories}
 
 Only output data that matches the categories (and the "specifically" part if present).
-If no the user did not specify the value, but the category was submitted, then the value is "true" (meaning that the user completed the goal, but the value is unknown).
+If the user did not specify the value, but the category is mentioned as completed, then the value is "true" (meaning that the user completed the goal, but the value is unknown).
 If the user says that they did not complete the goal, then the value is "false".
 """
 
@@ -78,6 +78,9 @@ def _parse_value(value: str) -> None | int | bool:
 def _process_submission_item(day_shift: str, category: str, value: str, category_name_to_goal_id: dict[str, int]) -> Optional[ParsedSubmissionItem]:
     if category == 'category':
         # skip the header, if present
+        return None
+    
+    if value == "":
         return None
 
     if day_shift == '0':
