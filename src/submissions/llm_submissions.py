@@ -23,7 +23,7 @@ openai_client = AsyncOpenAI(
 class ParsedSubmissionItem:
     category: str
     goal_id: int
-    value: Optional[int]
+    value: None | int | bool
     submission_time: datetime
 
 
@@ -54,7 +54,12 @@ def _format_category(category_name: str, goal_description: Optional[str], metric
     return f"- {category_name}:\n{category_speicialisation}  - value: {metric}"
 
 
-def _parse_value(value: str) -> Optional[int]:
+def _parse_value(value: str) -> None | int | bool:
+    """ Parse the value from the user's message.
+    None - the value is unknown, used for boolean submission
+    int - the value is a number
+    False - the user did not complete the goal
+    """
     value = value.strip().lower()
 
     if value == 'true':
@@ -89,6 +94,9 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
     category = category.strip()
     value = _parse_value(value)
 
+    if value is False:
+        return None
+
     goal_id = category_name_to_goal_id.get(category, None)
     if goal_id is None:
         # skip the category that is not in the user's goals
@@ -100,6 +108,25 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
         submission_time=submission_time,
         goal_id=goal_id,
     )
+
+
+def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, int]) -> list[ParsedSubmissionItem]:
+    csv_data = csv_data.strip('`\n').strip()
+
+    items = list(csv.reader(csv_data.split('\n')))
+    items = [item for item in items if len(item) == 3]
+
+    parsed_submissions = []
+
+    for day_shift, category, value in items:
+        submission_item = _process_submission_item(
+            day_shift, category, value, category_name_to_goal_id
+        )
+
+        if submission_item:
+            parsed_submissions.append(submission_item)
+
+    return parsed_submissions
 
 
 async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedSubmissionItem]:
@@ -140,21 +167,5 @@ async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedS
     )
 
     csv_data = response.choices[0].message.content
-    csv_data = csv_data.strip('`\n').strip()
 
-    items = list(csv.reader(csv_data.split('\n')))
-    items = [item for item in items if len(item) == 3]
-
-    parsed_submissions = []
-
-    for day_shift, category, value in items:
-        submission_item = _process_submission_item(
-            day_shift, category, value, category_name_to_goal_id
-        )
-
-        if submission_item:
-            parsed_submissions.append(submission_item)
-
-    return parsed_submissions
-
-    
+    return _process_csv_submission(csv_data, category_name_to_goal_id)
