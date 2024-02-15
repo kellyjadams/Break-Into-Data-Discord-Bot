@@ -23,7 +23,7 @@ openai_client = AsyncOpenAI(
 class ParsedSubmissionItem:
     category: str
     goal_id: int
-    value: Optional[int]
+    value: None | int | bool
     submission_time: datetime
 
 
@@ -34,13 +34,13 @@ Make sure to use this schema:
 <day shift>, <category>, <value>
 Day shift is 0 for today's submission, -1 for yesterday's submission and so on.
 If no time is mentioned, then it is 0.
-Only provide metrics from the user's goals, ignore others
+Only provide metrics from the user's goals, ignore others.
 
 Possible categories: 
 {categories}
 
 Only output data that matches the categories (and the "specifically" part if present).
-If no the user did not specify the value, but the category was submitted, then the value is "true" (meaning that the user completed the goal, but the value is unknown).
+If the user did not specify the value, but the category is mentioned as completed, then the value is "true" (meaning that the user completed the goal, but the value is unknown).
 If the user says that they did not complete the goal, then the value is "false".
 """
 
@@ -54,7 +54,12 @@ def _format_category(category_name: str, goal_description: Optional[str], metric
     return f"- {category_name}:\n{category_speicialisation}  - value: {metric}"
 
 
-def _parse_value(value: str) -> Optional[int]:
+def _parse_value(value: str) -> None | int | bool:
+    """ Parse the value from the user's message.
+    None - the value is unknown, used for boolean submission
+    int - the value is a number
+    False - the user did not complete the goal
+    """
     value = value.strip().lower()
 
     if value == 'true':
@@ -74,6 +79,9 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
     if category == 'category':
         # skip the header, if present
         return None
+    
+    if value == "":
+        return None
 
     if day_shift == '0':
         # today
@@ -89,6 +97,9 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
     category = category.strip()
     value = _parse_value(value)
 
+    if value is False:
+        return None
+
     goal_id = category_name_to_goal_id.get(category, None)
     if goal_id is None:
         # skip the category that is not in the user's goals
@@ -100,6 +111,25 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
         submission_time=submission_time,
         goal_id=goal_id,
     )
+
+
+def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, int]) -> list[ParsedSubmissionItem]:
+    csv_data = csv_data.strip('`\n').strip()
+
+    items = list(csv.reader(csv_data.split('\n')))
+    items = [item for item in items if len(item) == 3]
+
+    parsed_submissions = []
+
+    for day_shift, category, value in items:
+        submission_item = _process_submission_item(
+            day_shift, category, value, category_name_to_goal_id
+        )
+
+        if submission_item:
+            parsed_submissions.append(submission_item)
+
+    return parsed_submissions
 
 
 async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedSubmissionItem]:
@@ -140,21 +170,5 @@ async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedS
     )
 
     csv_data = response.choices[0].message.content
-    csv_data = csv_data.strip('`\n').strip()
 
-    items = list(csv.reader(csv_data.split('\n')))
-    items = [item for item in items if len(item) == 3]
-
-    parsed_submissions = []
-
-    for day_shift, category, value in items:
-        submission_item = _process_submission_item(
-            day_shift, category, value, category_name_to_goal_id
-        )
-
-        if submission_item:
-            parsed_submissions.append(submission_item)
-
-    return parsed_submissions
-
-    
+    return _process_csv_submission(csv_data, category_name_to_goal_id)
