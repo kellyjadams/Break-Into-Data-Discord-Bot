@@ -75,7 +75,7 @@ TRACKS = {
 
 class TrackSettingsView(discord.ui.View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
 
         for track in TRACKS.values():
             self.add_button(track)
