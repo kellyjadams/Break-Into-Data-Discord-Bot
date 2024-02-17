@@ -35,6 +35,7 @@ async def process_submission_message(message):
 
     submission_items = await parse_submission_message(
         message.content,
+        message.created_at,
         user_goals,
     )
 

@@ -75,7 +75,10 @@ def _parse_value(value: str) -> None | int | bool:
         return None
 
 
-def _process_submission_item(day_shift: str, category: str, value: str, category_name_to_goal_id: dict[str, int]) -> Optional[ParsedSubmissionItem]:
+def _process_submission_item(
+        day_shift: str, category: str, value: str,
+        category_name_to_goal_id: dict[str, int], 
+        created_at: datetime) -> Optional[ParsedSubmissionItem]:
     if category == 'category':
         # skip the header, if present
         return None
@@ -85,10 +88,10 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
 
     if day_shift == '0':
         # today
-        submission_time = datetime.now()
+        submission_time = created_at
     elif day_shift == '-1':
         # yesterday
-        submission_time = (datetime.now() - timedelta(days=1)).replace(
+        submission_time = (created_at - timedelta(days=1)).replace(
             hour=0, minute=0, second=0, microsecond=0)
     else:
         # skip old submissions
@@ -113,7 +116,10 @@ def _process_submission_item(day_shift: str, category: str, value: str, category
     )
 
 
-def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, int]) -> list[ParsedSubmissionItem]:
+def _process_csv_submission(
+        csv_data: str, 
+        category_name_to_goal_id: dict[str, int],
+        created_at: datetime) -> list[ParsedSubmissionItem]:
     csv_data = csv_data.strip('`\n').strip()
 
     items = list(csv.reader(csv_data.split('\n')))
@@ -123,7 +129,8 @@ def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, i
 
     for day_shift, category, value in items:
         submission_item = _process_submission_item(
-            day_shift, category, value, category_name_to_goal_id
+            day_shift, category, value, 
+            category_name_to_goal_id, created_at
         )
 
         if submission_item:
@@ -132,7 +139,7 @@ def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, i
     return parsed_submissions
 
 
-async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedSubmissionItem]:
+async def parse_submission_message(text: str, created_at: datetime, goals: list[Goal]) -> list[ParsedSubmissionItem]:
     categories = {
         category.category_id: category.name
         for category in await get_categories()
@@ -171,4 +178,4 @@ async def parse_submission_message(text: str, goals: list[Goal]) -> list[ParsedS
 
     csv_data = response.choices[0].message.content
 
-    return _process_csv_submission(csv_data, category_name_to_goal_id)
+    return _process_csv_submission(csv_data, category_name_to_goal_id, created_at)
