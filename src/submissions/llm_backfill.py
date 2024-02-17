@@ -1,5 +1,7 @@
 import csv
 import os
+import asyncio
+
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -136,8 +138,21 @@ def _process_csv_submission(csv_data: str, category_name_to_goal_id: dict[str, i
 
     return parsed_submissions
 
+last_api_call_time = datetime.min
 
 async def parse_submission_message(text: str, goals: list[Goal], created_at: datetime) -> list[ParsedSubmissionItem]:
+   
+    global last_api_call_time
+
+    # Rate limiting logic
+    min_interval = timedelta(seconds=60 / 3)  # 5 requests per 60 seconds
+    now = datetime.now()
+    if now - last_api_call_time < min_interval:
+        await asyncio.sleep((min_interval - (now - last_api_call_time)).total_seconds())
+
+    last_api_call_time = datetime.now()
+
+   
     categories = {
         category.category_id: category.name
         for category in await get_categories()

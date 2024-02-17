@@ -19,6 +19,7 @@ DISCORD_TOKEN = os.environ['DISCORD_BOT_TOKEN']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = ['1197314741534736464', '1197259793266638970', '1168693561429069834']
 
+
 client = discord.Client(
     intents=discord.Intents.all(),
 )
@@ -43,7 +44,7 @@ async def backfill_submissions():
                 if message.attachments:
                     user = await ensure_user(message.author)
 
-                    category = get_category(message.channel.name)
+                    category = await get_category(message.channel.name)
                     if category is None:
                         continue
 
