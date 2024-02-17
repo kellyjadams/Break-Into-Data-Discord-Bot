@@ -36,6 +36,14 @@ client = discord.Client(
     intents=discord.Intents.all(),
 )
 
+logging.basicConfig(
+    filename='bot.log',
+    encoding='utf-8', 
+    level=logging.DEBUG, 
+    format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:line %(lineno)d: %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class Track:
@@ -71,9 +79,9 @@ TRACKS = {
     ]
 }
 
-#This creates a view with the buttons for each track
 
 class TrackSettingsView(discord.ui.View):
+    """ Creates a view with the buttons for each track """
     def __init__(self):
         super().__init__(timeout=None)
 
@@ -86,11 +94,6 @@ class TrackSettingsView(discord.ui.View):
         self.add_item(btn)
 
     async def interaction_check(self, interaction: discord.Interaction):
-
-        #print(interaction)
-        #print(interaction.type)
-
-        #print(discord.InteractionType.component)
         if not interaction.type == discord.InteractionType.component:
             return False
         track = TRACKS.get(interaction.data['custom_id'])
@@ -104,9 +107,9 @@ class TrackSettingsView(discord.ui.View):
 
         return True
 
-#This adds user's inputs in the goals table
 
 class TrackSettingsModal(discord.ui.Modal):
+    """ Adds user's inputs in the goals table """
     def __init__(self, track: Track):
         super().__init__(title=track.name)
         self.track = track
@@ -144,7 +147,6 @@ class TrackSettingsModal(discord.ui.Modal):
             self.add_item(self.daily_target_input)
 
         # New field for frequency
-
         if 'frequency' in track.questions_needed:
             self.frequency_input = discord.ui.TextInput(
                 label="What is the frequency per week? ",
@@ -152,8 +154,8 @@ class TrackSettingsModal(discord.ui.Modal):
             self.add_item(self.frequency_input)
 
 
-#This makes sure the user input a number and not a string
     async def on_submit(self, interaction: discord.Interaction):
+        """ Makes sure the user input a number and not a string """
         logging.info(f'Goal submission attempt by {interaction.user}')
         try:
             daily_target = int(self.daily_target_input.value.strip())
@@ -203,8 +205,8 @@ async def on_ready():
     await send_weekly_leaderboard.start()
 
 
-@client.event
-async def on_message(message):
+
+async def process_discord_message(message: discord.Message):
     if message.author == client.user:
         return
 
@@ -229,6 +231,12 @@ async def on_message(message):
                 proof_url=attchemnt.url,
                 amount=0,
             )
+
+
+@client.event
+async def on_message(message):
+    await process_discord_message(message)
+
 
 # map from a user to it's voice channel join time
 VOICE_CHANNELS_JOIN_TIME = {}
@@ -273,11 +281,14 @@ async def on_voice_state_update(member, before, after):
     print(member, before, after)
     await process_voice_channel_activity(member, before, after)
 
+
 @client.event
 async def on_error(event, *args, **kwargs):
     logging.error(f'Unhandled error in {event}:', exc_info=True)
 
+
 tree = app_commands.CommandTree(client)
+
 
 @tree.command(
     name="submit",
@@ -384,16 +395,12 @@ async def send_weekly_leaderboard():
 
 
 async def init():
-    logging.basicConfig(filename='bot.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:line %(lineno)d: %(message)s')
-    logger = logging.getLogger(__name__)
     DATABASE_URL = os.getenv('DATABASE_URL')
     if not DATABASE_URL:
         raise Exception("Please set the DATABASE_URL environment variable")
 
     await init_db(DATABASE_URL)
-
-    # await clean_database()
-
+    
     discord.utils.setup_logging()
     return await client.start(DISCORD_TOKEN)
 
