@@ -15,6 +15,7 @@ from discord.ext import tasks
 from src.database import (
     get_category_by_name,
     get_category_for_voice,
+    get_user_goals,
     init_db,
     get_goal,
     new_goal,
@@ -381,6 +382,21 @@ async def backfill(interaction):
     view = OnboardingView()
     await interaction.response.send_message("Click the button below:", view=view, ephemeral=False)
 
+@tree.command(
+        name="goals",
+        description="To get your active goals",
+        guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+async def user_goals(interaction):
+    await interaction.response.defer(ephemeral=False, thinking=True)
+
+    goals = await get_user_goals(interaction.user.id)
+    if goals:
+        msg_parts = [f"{goal.goal_description}: {goal.target} {goal.metric}, {goal.frequency} times a week" for goal in goals]
+        goals_message = "\n".join(msg_parts)
+        await interaction.followup.send(f"Here are your current goals:\n{goals_message}", ephemeral=False)
+    else:
+        await interaction.followup.send("You currently have no active goals.", ephemeral=False)
 
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():
