@@ -201,10 +201,24 @@ async def on_ready():
     logging.info(f'Logged in as {client.user}')
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
-
     channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
-    view = TrackSettingsView()
-    await channel.send('Pick your goal:', view=view)
+    logging.info(f'Checking for existing message with goal buttons.')
+    async for message in channel.history(limit=1):
+        if message.author == client.user and 'Pick your goal:' in message.content:
+            # Found an existing message to update
+            view = TrackSettingsView()
+            await message.edit(content='Pick your goal:', view=view)
+            logging.info(f'Updated existing message with goal buttons.')
+            break
+    else:
+        # No existing message found
+        view = TrackSettingsView()
+        await channel.send('Pick your goal:', view=view)
+        logging.info(f'No existing message. Sent new message.')
+
+        
+    # view = TrackSettingsView()
+    # await channel.send('Pick your goal:', view=view)
 
     await send_weekly_leaderboard.start()
 
@@ -379,10 +393,8 @@ async def send_weekly_leaderboard():
     logging.info('Sending weekly leaderboard')
     channel = await client.fetch_channel(GENERAL_CHANNEL_ID)
     #Get last message in channel
-    async for message in channel.history(limit=1):
-        last_message = message
-        break
-    if last_message and last_message.author == client.user:
+    async for last_message in channel.history(limit=1):
+        if last_message and last_message.author == client.user:
             if "Weekly leaderboard" in last_message.content:
                 time_since_last_message = datetime.now(timezone.utc) - last_message.created_at
                 if time_since_last_message < timedelta(hours=24):
