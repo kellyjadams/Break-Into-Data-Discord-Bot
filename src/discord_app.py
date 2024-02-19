@@ -215,11 +215,7 @@ async def on_ready():
         view = TrackSettingsView()
         await channel.send('Pick your goal:', view=view)
         logging.info(f'No existing message. Sent new message.')
-
         
-    # view = TrackSettingsView()
-    # await channel.send('Pick your goal:', view=view)
-
     await send_weekly_leaderboard.start()
 
 
