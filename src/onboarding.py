@@ -1,5 +1,5 @@
 import discord
-from src.database import new_user
+from src.database import save_user_personal_details
 
 class OnboardingModal(discord.ui.Modal):
     def __init__(self):
@@ -25,10 +25,8 @@ class OnboardingModal(discord.ui.Modal):
 
         name = self.name.value
         email = self.email.value
-        user_id = interaction.user.id
-        username = interaction.user.name
 
-        await new_user(user_id, username, email, name)
+        await save_user_personal_details(interaction.user, email, name)
 
         await interaction.followup.send(f"Thanks for submitting, {name}!", ephemeral=True)
 

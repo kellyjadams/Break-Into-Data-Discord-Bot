@@ -100,25 +100,31 @@ class TrackSettingsView(discord.ui.View):
         self.add_item(btn)
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if not interaction.type == discord.InteractionType.component:
-            return False
-        await interaction.response.defer(ephemeral=True)
-        user = await get_user(interaction.user.id)
-        if user.email is None:
+        try:
+            if not interaction.type == discord.InteractionType.component:
+                return False
+            await interaction.response.defer(ephemeral=True)
+            user = await get_user(interaction.user.id)
+            if user is None or user.email is None:
+                await interaction.followup.send(
+                    "Please create a profile before submitting your goals:", 
+                    view=OnboardingView(), ephemeral=True)
+                return
+            track = TRACKS.get(interaction.data['custom_id'])
+            if not track:
+                await interaction.followup.send(
+                    "Something went wrong, please try again", ephemeral=True)
+                return False
+
+            modal = TrackSettingsModal(track)
+            await interaction.response.send_modal(modal)
+
+            return True
+        except Exception as e:
             await interaction.followup.send(
-                "Please create a profile before submitting your goals:", 
-                view=OnboardingView(), ephemeral=True)
-            return
-        track = TRACKS.get(interaction.data['custom_id'])
-        if not track:
-            interaction.followup.send(
-                "Something went wrong, please try again", ephemeral=True)
-            return False
-
-        modal = TrackSettingsModal(track)
-        await interaction.response.send_modal(modal)
-
-        return True
+                    "Something went wrong, please try again", ephemeral=True)
+            logger.error(f"Something went wrong for {interaction.user.name}: {e}")
+            raise
 
 
 class TrackSettingsModal(discord.ui.Modal):
@@ -180,7 +186,7 @@ class TrackSettingsModal(discord.ui.Modal):
 
         await interaction.response.defer(thinking=True, ephemeral=True)
 
-        #check - We do not need this check since we are checking this when user selects goal
+        #check - Here we use get user to make sure user exists?
         #user = await ensure_user(interaction.user)
 
         # TODO: get category by track
@@ -271,11 +277,11 @@ async def process_voice_channel_activity(member, before, after):
     member_joins_channel = before.channel is None and after.channel is not None
     member_leaves_channel = before.channel is not None and (after.channel is None or after.channel.name != before.channel.name)
 
-    #check - We do not have voicechannel set up to any category rn but need to check this 
+    #check - need to check this 
     user = await ensure_user(member)
 
     if member_joins_channel:
-        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.utcnow()
+        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.now(datetime.UTC)
         logging.debug(f'Voice channel activity: {member} joined {after.channel.name}')
 
     if member_leaves_channel:

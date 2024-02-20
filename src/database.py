@@ -60,32 +60,35 @@ async def clean_database():
         print()
 
 
-async def new_user(user_id, username, email, name) -> User:
+async def save_user_personal_details(user, email, name) -> User:
+    user = await ensure_user(user)
     try:
-        user = await get_user(user_id)
-        if user is None:
-            async with DB_ENGINE.begin() as conn:
-                cursor = await conn.execute(insert(User).values(
-                    user_id=user_id,
-                    username=username,
-                    email=email,
-                    name=name,
-                ).returning(User))
+        async with DB_ENGINE.begin() as conn:
+            cursor = await conn.execute(update(User).where(
+                User.user_id==user.user_id).values(
+                    email=email, name=name,
+            ).returning(User))
 
-                user = cursor.fetchone()
-                logger.info(f"New user created: {username} with ID {user_id}")
-                return user
-        else:
-            async with DB_ENGINE.begin() as conn:
-                cursor = await conn.execute(update(User).where(
-                    User.user_id==user_id, User.username==username).values(
-                        email=email, name=name,
-                ).returning(User))
+            user = cursor.fetchone()
+            logger.info(f"Updated user name and email for : {user.username} with ID {user.user_id}")
+            return user
+    except Exception as e:
+        logger.error(f"Failed to create new user {user.id}: {e}")
+        raise
 
-                user = cursor.fetchone()
-                logger.info(f"Updated user name and email for : {username} with ID {user_id}")
-                return user
-            
+
+async def new_user(user_id, username, email=None) -> User:
+    try:
+        async with DB_ENGINE.begin() as conn:
+            cursor = await conn.execute(insert(User).values(
+                user_id=user_id,
+                username=username,
+                email=email,
+            ).returning(User))
+
+            user = cursor.fetchone()
+            logger.info(f"New user created: {username} with ID {user_id}")
+            return user           
     except Exception as e:
         logger.error(f"Failed to create new user {username}: {e}")
         raise
