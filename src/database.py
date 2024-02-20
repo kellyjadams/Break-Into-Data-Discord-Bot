@@ -60,8 +60,8 @@ async def clean_database():
         print()
 
 
-async def save_user_personal_details(user, email, name) -> User:
-    user = await ensure_user(user)
+async def save_user_personal_details(discord_user, email, name) -> User:
+    user = await ensure_user(discord_user)
     try:
         async with DB_ENGINE.begin() as conn:
             cursor = await conn.execute(update(User).where(
@@ -88,7 +88,7 @@ async def new_user(user_id, username, email=None) -> User:
 
             user = cursor.fetchone()
             logger.info(f"New user created: {username} with ID {user_id}")
-            return user           
+            return user
     except Exception as e:
         logger.error(f"Failed to create new user {username}: {e}")
         raise
