@@ -1,7 +1,13 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import delete, insert, select, text
+from sqlalchemy import (
+    delete, 
+    insert, 
+    select, 
+    text, 
+    update
+    )
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
@@ -54,18 +60,32 @@ async def clean_database():
         print()
 
 
-async def new_user(user_id, username, email=None) -> User:
+async def new_user(user_id, username, email, name) -> User:
     try:
-        async with DB_ENGINE.begin() as conn:
-            cursor = await conn.execute(insert(User).values(
-                user_id=user_id,
-                username=username,
-                email=email,
-            ).returning(User))
+        user = await get_user(user_id)
+        if user is None:
+            async with DB_ENGINE.begin() as conn:
+                cursor = await conn.execute(insert(User).values(
+                    user_id=user_id,
+                    username=username,
+                    email=email,
+                    name=name,
+                ).returning(User))
 
-            user = cursor.fetchone()
-            logger.info(f"New user created: {username} with ID {user_id}")
-            return user
+                user = cursor.fetchone()
+                logger.info(f"New user created: {username} with ID {user_id}")
+                return user
+        else:
+            async with DB_ENGINE.begin() as conn:
+                cursor = await conn.execute(update(User).where(
+                    User.user_id==user_id, User.username==username).values(
+                        email=email, name=name,
+                ).returning(User))
+
+                user = cursor.fetchone()
+                logger.info(f"Updated user name and email for : {username} with ID {user_id}")
+                return user
+            
     except Exception as e:
         logger.error(f"Failed to create new user {username}: {e}")
         raise
