@@ -103,25 +103,23 @@ class TrackSettingsView(discord.ui.View):
         try:
             if not interaction.type == discord.InteractionType.component:
                 return False
-            await interaction.response.defer(ephemeral=True)
             user = await get_user(interaction.user.id)
             if user is None or user.email is None:
+                await interaction.response.defer(ephemeral=True)
                 await interaction.followup.send(
                     "Please create a profile before submitting your goals:", 
                     view=OnboardingView(), ephemeral=True)
-                return
-            track = TRACKS.get(interaction.data['custom_id'])
-            if not track:
-                await interaction.followup.send(
-                    "Something went wrong, please try again", ephemeral=True)
                 return False
+            track = TRACKS.get(interaction.data['custom_id'])
 
-            modal = TrackSettingsModal(track)
-            await interaction.response.send_modal(modal)
-
-            return True
+            if track:
+                modal = TrackSettingsModal(track)
+                await interaction.response.send_modal(modal)
+                return True
+        
         except Exception as e:
-            await interaction.followup.send(
+
+            await interaction.response.send_message(
                     "Something went wrong, please try again", ephemeral=True)
             logger.error(f"Something went wrong for {interaction.user.name}: {e}")
             raise

@@ -73,7 +73,7 @@ async def save_user_personal_details(discord_user, email, name) -> User:
             logger.info(f"Updated user name and email for : {user.username} with ID {user.user_id}")
             return user
     except Exception as e:
-        logger.error(f"Failed to create new user {user.id}: {e}")
+        logger.error(f"Failed to update user {user.user_id}: {e}")
         raise
 
 
