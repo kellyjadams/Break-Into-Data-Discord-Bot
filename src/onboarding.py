@@ -1,5 +1,7 @@
 import discord
+
 from src.database import save_user_personal_details
+
 
 class OnboardingModal(discord.ui.Modal):
     def __init__(self):
@@ -30,14 +32,19 @@ class OnboardingModal(discord.ui.Modal):
 
         await interaction.followup.send(f"Thanks for submitting, {name}!", ephemeral=True)
 
+
 class OnboardingButton(discord.ui.Button):
     def __init__(self):
-        super().__init__(label="Complete Profile", 
-                         style=discord.ButtonStyle.primary, custom_id="submit_info")
+        super().__init__(
+            label="Complete Profile", 
+            style=discord.ButtonStyle.primary, 
+            custom_id="submit_info"
+        )
 
     async def callback(self, interaction: discord.Interaction):
         modal = OnboardingModal()
         await interaction.response.send_modal(modal)
+
 
 class OnboardingView(discord.ui.View):
     def __init__(self):

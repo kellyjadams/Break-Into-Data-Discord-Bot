@@ -6,7 +6,8 @@ from datetime import (
     datetime, 
     timedelta, 
     timezone
-    )
+)
+
 import dotenv
 import discord
 from discord import app_commands
@@ -16,7 +17,6 @@ from src.database import (
     get_category_by_name,
     get_category_for_voice,
     get_user_goals,
-    get_user,
     init_db,
     get_goal,
     new_goal,
@@ -24,10 +24,11 @@ from src.database import (
     get_category,
     new_submission,
 )
-from src.analytics.leaderboard import get_weekly_leaderboard
-from src.analytics.personal import get_personal_statistics
-from src.submissions import process_submission_message
+from src.models import User
 from src.onboarding import OnboardingView
+from src.submissions import process_submission_message
+from src.analytics.personal import get_personal_statistics
+from src.analytics.leaderboard import get_weekly_leaderboard
 
 
 dotenv.load_dotenv()
@@ -90,6 +91,32 @@ TRACKS = {
 }
 
 
+def is_user_activated(user: User):
+    """ Checks if the user is activated """
+    return bool(user.email)
+
+
+async def ensure_user_is_activated(user: User, interaction: discord.Interaction) -> bool:
+    """ Checks if the user is activated
+    Sends a message if the user is not activated
+    """
+    
+    if is_user_activated(user):
+        return True
+    
+    message = "Please create a profile before submitting your goals:"
+    view = OnboardingView()
+        
+    if interaction.response.is_done():
+        await interaction.followup.send(
+            message, view=view, ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            message, view=view, ephemeral=True)
+        
+    return False
+
+
 class TrackSettingsView(discord.ui.View):
     """ Creates a view with the buttons for each track """
     def __init__(self):
@@ -99,26 +126,33 @@ class TrackSettingsView(discord.ui.View):
             self.add_button(track)
 
     def add_button(self, track: Track):
-        btn = discord.ui.Button(label=track.name,
-                                style=discord.ButtonStyle.secondary, custom_id=track.name)
+        btn = discord.ui.Button(
+            label=track.name,
+            style=discord.ButtonStyle.secondary, 
+            custom_id=track.name
+        )
         self.add_item(btn)
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if not interaction.type == discord.InteractionType.component:
-            return False
-        user = await get_user(interaction.user.id)
-        if user is None or user.email is None:
-            await interaction.response.defer(ephemeral=True)
-            await interaction.followup.send(
-                "Please create a profile before submitting your goals:", 
-                view=OnboardingView(), ephemeral=True)
-            return False
-        track = TRACKS.get(interaction.data['custom_id'])
-
-        if track:
-            modal = TrackSettingsModal(track)
-            await interaction.response.send_modal(modal)
+        if interaction.type != discord.InteractionType.component:
             return True
+        
+        user = await ensure_user(interaction.user)
+        if not await ensure_user_is_activated(user, interaction):
+            return False
+        
+        track = TRACKS.get(interaction.data.get('custom_id'))
+
+        if not track:
+            interaction.response.send_message(
+                "Something went wrong, please try again", ephemeral=True)
+            logger.error(f'Can\'t find track: {interaction.data.get("custom_id")}')
+            return False
+        
+        modal = TrackSettingsModal(track)
+        await interaction.response.send_modal(modal)
+        
+        return False
 
 
 class TrackSettingsModal(discord.ui.Modal):
@@ -126,7 +160,6 @@ class TrackSettingsModal(discord.ui.Modal):
     def __init__(self, track: Track):
         super().__init__(title=track.name)
         self.track = track
-        #print(track.questions_needed)
 
         if 'description' in track.questions_needed:
             # New field for their
@@ -166,7 +199,6 @@ class TrackSettingsModal(discord.ui.Modal):
                 placeholder="e.g. 4, 5 (times a week) ")
             self.add_item(self.frequency_input)
 
-
     async def on_submit(self, interaction: discord.Interaction):
         """ Makes sure the user input a number and not a string """
         logging.info(f'Goal submission attempt by {interaction.user}')
@@ -179,22 +211,22 @@ class TrackSettingsModal(discord.ui.Modal):
             return
 
         await interaction.response.defer(thinking=True, ephemeral=True)
-
-        #check - Here we use get user to make sure user exists?
-        #user = await ensure_user(interaction.user)
-
-        # TODO: get category by track
-        category = await get_category_by_name(self.track.name)
-
+    
+        # Checking user exists just to avoid any tricky edge cases
+        # This is not any slower than using get_user,
+        # So we can always use `ensure_user` to be safe
+        user, category = await asyncio.gather(
+            ensure_user(interaction.user),
+            get_category_by_name(self.track.name)
+        )
 
         if category is None:
             await interaction.followup.send(
                 "Something went wrong, please try later", ephemeral=True)
             return
 
-
         await new_goal(
-            user_id=interaction.user.id,
+            user_id=user.id,
             category_id=category.category_id,
             goal_description=self.description_input.value if 'description' in self.track.questions_needed else '',
             metric=self.metric_input.value if 'metric' in self.track.questions_needed else self.track.name,
@@ -227,7 +259,6 @@ async def on_ready():
             logging.info(f'No existing message. Sent new message.')
         
     await send_weekly_leaderboard.start()
-
 
 
 async def process_discord_message(message: discord.Message):
@@ -271,7 +302,6 @@ async def process_voice_channel_activity(member, before, after):
     member_joins_channel = before.channel is None and after.channel is not None
     member_leaves_channel = before.channel is not None and (after.channel is None or after.channel.name != before.channel.name)
 
-    #check - need to check this 
     user = await ensure_user(member)
 
     if member_joins_channel:
@@ -394,6 +424,7 @@ async def backfill(interaction):
     view = OnboardingView()
     await interaction.response.send_message("Click the button below:", view=view, ephemeral=False)
 
+
 @tree.command(
         name="goals",
         description="To get your active goals",
@@ -410,10 +441,9 @@ async def user_goals(interaction):
     else:
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
 
+
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():
-    # TODO: run every hour, but send only after 24 hours from the last report
-    # Leaderboard task only runs in production on Heroku
     logging.info('Sending weekly leaderboard')
     channel = await client.fetch_channel(GENERAL_CHANNEL_ID)
     #Get last message in channel

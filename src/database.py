@@ -23,7 +23,8 @@ from src.models import (
     Goal,
 )
 
-logger = logging.getLogger(__name__) #Setting up logger
+# Setting up logger
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 
@@ -39,8 +40,9 @@ async def init_db(database_url: str):
             echo=False,
         )
         logger.info("Database initialized successfully.")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
+    except Exception:
+        logger.exception(f"Failed to initialize database")
+
 
 async def close_db():
     if DB_ENGINE is not None:
@@ -62,6 +64,7 @@ async def clean_database():
 
 async def save_user_personal_details(discord_user, email, name) -> User:
     user = await ensure_user(discord_user)
+    
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(update(User).where(
             User.user_id==user.user_id).values(
@@ -69,61 +72,56 @@ async def save_user_personal_details(discord_user, email, name) -> User:
         ).returning(User))
 
         user = cursor.fetchone()
+        
+        _get_user.cache_invalidate(user.user_id)
+        
         logger.info(f"Updated user name and email for : {user.username} with ID {user.user_id}")
         return user
 
 
-
 async def new_user(user_id, username, email=None) -> User:
-    try:
-        async with DB_ENGINE.begin() as conn:
-            cursor = await conn.execute(insert(User).values(
-                user_id=user_id,
-                username=username,
-                email=email,
-            ).returning(User))
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(insert(User).values(
+            user_id=user_id,
+            username=username,
+            email=email,
+        ).returning(User))
 
-            user = cursor.fetchone()
-            logger.info(f"New user created: {username} with ID {user_id}")
-            return user
-    except Exception as e:
-        logger.error(f"Failed to create new user {username}: {e}")
-        raise
+        user = cursor.fetchone()
+        logger.info(f"New user created: {username} with ID {user_id}")
+        return user
 
 async def new_submission(user_id, goal_id, proof_url, amount) -> Submission:
-    try:
-        async with DB_ENGINE.begin() as conn:
-            cursor = await conn.execute(insert(Submission).values(
-                user_id=user_id,
-                goal_id=goal_id,
-                proof_url=proof_url,
-                amount=amount,
-            ).returning(Submission))
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(insert(Submission).values(
+            user_id=user_id,
+            goal_id=goal_id,
+            proof_url=proof_url,
+            amount=amount,
+        ).returning(Submission))
 
-            submission = cursor.fetchone()
-            logger.info(f"Submission attempt for {user_id}")
-            return submission
-    except Exception as e:
-        logger.error(f"Failed Submission for {user_id}: {e}")
+        submission = cursor.fetchone()
+        logger.info(f"Submission attempt for {user_id}")
+        return submission
 
 
 async def new_goal(user_id, category_id,goal_description, metric, target, frequency) -> Goal:
-    try:
-        async with DB_ENGINE.begin() as conn:
-            cursor = await conn.execute(insert(Goal).values(
-                user_id=user_id,
-                category_id=category_id,
-                goal_description=goal_description,
-                metric=metric,
-                target=target,
-                frequency=frequency,
-            ).returning(Goal))
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(insert(Goal).values(
+            user_id=user_id,
+            category_id=category_id,
+            goal_description=goal_description,
+            metric=metric,
+            target=target,
+            frequency=frequency,
+        ).returning(Goal))
 
-            goal = cursor.fetchone()
-            logger.info(f"Attempt to set New Goal for {user_id}")
-            return goal
-    except Exception as e:
-        logger.error(f"Failed setting New Goal for {user_id}: {e}")
+        goal = cursor.fetchone()
+        
+        get_goal.cache_invalidate(category_id, user_id)
+        
+        logger.info(f"Attempt to set New Goal for {user_id}")
+        return goal
 
 
 @alru_cache(maxsize=1000)
@@ -146,7 +144,12 @@ async def get_category_for_voice(voice_channel) -> Optional[Category]:
 
 
 @alru_cache(maxsize=1000)
-async def get_user(user_id) -> Optional[User]:
+async def _get_user(user_id) -> Optional[User]:
+    """ Get user by user_id 
+    Always use ensure_user instead of this function
+    It's not any faster to use this function,
+      because if the user exists, we will not create a new user.
+    """
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(User).where(User.user_id == user_id))).first()
 
@@ -180,7 +183,7 @@ async def get_user_goals(user_id):
 
 
 async def ensure_user(discord_user) -> User:
-    user = await get_user(discord_user.id)
+    user = await _get_user(discord_user.id)
     if user is None:
         user = await new_user(
             user_id=discord_user.id,
