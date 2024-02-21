@@ -73,13 +73,18 @@ async def save_user_personal_details(discord_user, email, name) -> User:
 
         user = cursor.fetchone()
         
-        _get_user.cache_invalidate(user.user_id)
+        get_user.cache_invalidate(user.user_id)
         
         logger.info(f"Updated user name and email for : {user.username} with ID {user.user_id}")
         return user
 
 
-async def new_user(user_id, username, email=None) -> User:
+async def _new_user(user_id, username, email=None) -> User:
+    """ Create new user
+    Always use ensure_user instead of this function
+    It's not any faster to use this function,
+      because if the user exists, we will not create a new user.
+    """
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(User).values(
             user_id=user_id,
@@ -144,12 +149,7 @@ async def get_category_for_voice(voice_channel) -> Optional[Category]:
 
 
 @alru_cache(maxsize=1000)
-async def _get_user(user_id) -> Optional[User]:
-    """ Get user by user_id 
-    Always use ensure_user instead of this function
-    It's not any faster to use this function,
-      because if the user exists, we will not create a new user.
-    """
+async def get_user(user_id) -> Optional[User]:
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(User).where(User.user_id == user_id))).first()
 
@@ -183,7 +183,7 @@ async def get_user_goals(user_id):
 
 
 async def ensure_user(discord_user) -> User:
-    user = await _get_user(discord_user.id)
+    user = await get_user(discord_user.id)
     if user is None:
         user = await new_user(
             user_id=discord_user.id,
