@@ -226,7 +226,7 @@ class TrackSettingsModal(discord.ui.Modal):
             return
 
         await new_goal(
-            user_id=user.id,
+            user_id=user.user_id,
             category_id=category.category_id,
             goal_description=self.description_input.value if 'description' in self.track.questions_needed else '',
             metric=self.metric_input.value if 'metric' in self.track.questions_needed else self.track.name,
