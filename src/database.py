@@ -1,7 +1,13 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import delete, insert, select, text
+from sqlalchemy import (
+    delete, 
+    insert, 
+    select, 
+    text, 
+    update
+)
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
@@ -52,6 +58,20 @@ async def clean_database():
         print(await conn.execute(delete(Goal)))
         print(await conn.execute(delete(User)))
         print()
+
+
+async def save_user_personal_details(discord_user, email, name) -> User:
+    user = await ensure_user(discord_user)
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(update(User).where(
+            User.user_id==user.user_id).values(
+                email=email, name=name,
+        ).returning(User))
+
+        user = cursor.fetchone()
+        logger.info(f"Updated user name and email for : {user.username} with ID {user.user_id}")
+        return user
+
 
 
 async def new_user(user_id, username, email=None) -> User:

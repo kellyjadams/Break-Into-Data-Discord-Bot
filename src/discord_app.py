@@ -16,6 +16,7 @@ from src.database import (
     get_category_by_name,
     get_category_for_voice,
     get_user_goals,
+    get_user,
     init_db,
     get_goal,
     new_goal,
@@ -105,16 +106,19 @@ class TrackSettingsView(discord.ui.View):
     async def interaction_check(self, interaction: discord.Interaction):
         if not interaction.type == discord.InteractionType.component:
             return False
-        track = TRACKS.get(interaction.data['custom_id'])
-        if not track:
-            interaction.response.send_message(
-                "Something went wrong, please try again", ephemeral=True)
+        user = await get_user(interaction.user.id)
+        if user is None or user.email is None:
+            await interaction.response.defer(ephemeral=True)
+            await interaction.followup.send(
+                "Please create a profile before submitting your goals:", 
+                view=OnboardingView(), ephemeral=True)
             return False
+        track = TRACKS.get(interaction.data['custom_id'])
 
-        modal = TrackSettingsModal(track)
-        await interaction.response.send_modal(modal)
-
-        return True
+        if track:
+            modal = TrackSettingsModal(track)
+            await interaction.response.send_modal(modal)
+            return True
 
 
 class TrackSettingsModal(discord.ui.Modal):
@@ -176,7 +180,8 @@ class TrackSettingsModal(discord.ui.Modal):
 
         await interaction.response.defer(thinking=True, ephemeral=True)
 
-        user = await ensure_user(interaction.user)
+        #check - Here we use get user to make sure user exists?
+        #user = await ensure_user(interaction.user)
 
         # TODO: get category by track
         category = await get_category_by_name(self.track.name)
@@ -189,7 +194,7 @@ class TrackSettingsModal(discord.ui.Modal):
 
 
         await new_goal(
-            user_id=user.user_id,
+            user_id=interaction.user.id,
             category_id=category.category_id,
             goal_description=self.description_input.value if 'description' in self.track.questions_needed else '',
             metric=self.metric_input.value if 'metric' in self.track.questions_needed else self.track.name,
@@ -233,6 +238,7 @@ async def process_discord_message(message: discord.Message):
         await process_submission_message(message)
     
     if message.attachments:
+        #check - Maybe we should check if user has a goal and if not ask them to declare it. 
         user = await ensure_user(message.author)
 
         category = await get_category(message.channel.name)
@@ -265,10 +271,11 @@ async def process_voice_channel_activity(member, before, after):
     member_joins_channel = before.channel is None and after.channel is not None
     member_leaves_channel = before.channel is not None and (after.channel is None or after.channel.name != before.channel.name)
 
+    #check - need to check this 
     user = await ensure_user(member)
 
     if member_joins_channel:
-        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.utcnow()
+        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.now(datetime.UTC)
         logging.debug(f'Voice channel activity: {member} joined {after.channel.name}')
 
     if member_leaves_channel:
@@ -320,6 +327,7 @@ async def submit_command(interaction, amount: int):
 
     await interaction.response.defer(thinking=True, ephemeral=True)
 
+    #check - We do not use this rn (LLM instead) but needs to take a look.
     user, category = await asyncio.gather(
         ensure_user(interaction.user),
         get_category(interaction.channel.name)
