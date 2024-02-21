@@ -104,7 +104,7 @@ async def ensure_user_is_activated(user: User, interaction: discord.Interaction)
     if is_user_activated(user):
         return True
     
-    message = "Please create a profile before submitting your goals:"
+    message = "Please create a profile first:"
     view = OnboardingView()
         
     if interaction.response.is_done():
