@@ -269,7 +269,7 @@ async def process_discord_message(message: discord.Message, is_backfill=False):
     
     is_channel_correct = (
         str(message.channel.id) == SUBMISSION_CHANNEL_ID 
-        or backfill
+        or is_backfill
     )
 
     if is_channel_correct and message.content:
