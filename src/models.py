@@ -16,6 +16,7 @@ class User(Base):
     username = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     email = Column(String, nullable=True)
+    name = Column(String, nullable=True)
 
     # Reverse relations are defined in the related models
     submissions = relationship("Submission", back_populates="user")
