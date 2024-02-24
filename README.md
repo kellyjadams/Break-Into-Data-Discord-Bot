@@ -4,7 +4,7 @@ This Accountability bot is here to enhance your experience, helping you track yo
 
 ![image](images/system_diagram.png)
 
-And editable version of this diagram is [here](https://lucid.app/lucidchart/a9c157f6-8695-4d2a-b63d-3140dd41b394/edit?viewport_loc=34%2C-365%2C2194%2C1256%2C0_0&invitationId=inv_fa0ca8f2-a8ea-45d7-9d63-0f1b899232a2)
+View the editable version of this diagram [here](https://lucid.app/lucidchart/a9c157f6-8695-4d2a-b63d-3140dd41b394/edit?viewport_loc=34%2C-365%2C2194%2C1256%2C0_0&invitationId=inv_fa0ca8f2-a8ea-45d7-9d63-0f1b899232a2)
 
 
 ## Features
@@ -17,15 +17,22 @@ And editable version of this diagram is [here](https://lucid.app/lucidchart/a9c1
 
 ## Getting Started
 
+### Complete Your Profile
+Before setting up your goals you have to create a profile. Include your name and your email address. 
+
 ### Setting Up Your Goals
 
-1. **Pick Your Track**: When you join the server or when the bot prompts, select your preferred track (e.g., Fitness, Leetcode) by clicking on the corresponding button.
-2. **Declare your goals**: Enter the details of your goal, including any specific targets and metrics (e.g., 30 minutes of meditation daily).
-3. **Submit Your Progress**: Use the `/submit` command followed by the amount you've achieved (e.g., `/submit 5` to log 5 Leetcode problems solved).
+1. **Pick Your Track**: After setting up your server or when the bot prompts, select the type of goal (e.g., Fitness, Leetcode) by clicking on the corresponding button.
+2. **Declare your goals**: Enter the details of your goal, including a description, metric (e.g., miles, minutes), target (must be a number) and frequency per week.
+3. **Submit Your Progress**: State what you did, such as "I studied japanese for 20 minutes today". If that doesn't work use the `/submit` command followed by the amount you've achieved (e.g., `/submit 5` to log 5 Leetcode problems solved). 
 
 ### Viewing Your Progress
 
 - To view your personal statistics, including submissions and active days, use the `/stats` command. This will provide a breakdown of your weekly achievements.
+
+### Viewing Your Goals
+
+- To view all of your active goals, use `/goals` command. This will give you each of your goals. 
 
 ### Participating in Leaderboards
 
@@ -35,11 +42,12 @@ And editable version of this diagram is [here](https://lucid.app/lucidchart/a9c1
 
 - `/submit [amount]`: Submit your daily progress for a specific goal.
 - `/stats`: Receive a summary of your personal stats for the last week.
+- `/goals`: View all of your active goals. 
 
 ## Support
 
-Should you encounter any issues or have questions about using the bot, feel free to reach out to the server moderators or directly to Meri Nova for assistance on our server.
+If you encounter any issues or have questions about using the bot, feel free to reach out to the server moderators or directly to Meri Nova for assistance on our server.
 
 ## Contributing
 
-We're always looking to improve and expand the bot's functionalities. If you have suggestions or would like to contribute to the development, please mention it on the discord or submit an issue to this repository. Follow out [CONTRIBUTING.md](.github/workflows/CONTRIBUTING.md) file for more information on how you can be part of building this awesome bot. 
+We're always looking to improve and expand the bot's functionalities. If you have suggestions or would like to contribute to the development, please mention it on the discord or submit an issue to this repository. Check out our [CONTRIBUTING.md](.github/workflows/CONTRIBUTING.md) file for more information on how you can be part of building this awesome bot. 
