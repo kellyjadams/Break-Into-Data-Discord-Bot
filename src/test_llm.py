@@ -1,9 +1,9 @@
 import pytest
 from datetime import datetime, timedelta
-from src.submissions.llm_submissions import _process_csv_submission, ParsedSubmissionItem
+from src.submissions import ParsedSubmissionItem
+from src.submissions.llm_submissions import process_csv_submission
 
-@pytest.mark.asyncio
-async def test_process_csv_submission():
+def test_process_csv_submission():
     # Test Data
     csv_data = "0, Fitness, 30\n-1, Reading, true"
     # Mapping of category names to goal IDs [done in parse_submission_message()]
@@ -16,7 +16,7 @@ async def test_process_csv_submission():
     ]
 
     # Call the function to test
-    result = _process_csv_submission(csv_data, category_name_to_goal_id, datetime.now())
+    result = process_csv_submission(csv_data, category_name_to_goal_id, datetime.now())
 
     # Verify each item 
     for expected_item, result_item in zip(expected, result):

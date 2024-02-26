@@ -4,7 +4,8 @@ async-lru==2.0.4
 asyncpg==0.29.0
 discord.py==2.3.2
 greenlet
+openai==1.12.0
+
 #below are for testing
 pytest-asyncio
 pytest
-openai==1.12.0
