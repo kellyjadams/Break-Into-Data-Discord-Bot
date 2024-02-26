@@ -13,28 +13,8 @@ from src.database import (
 logger = logging.getLogger(__name__)
 
 
-def _format_proof_request_message(unprocessed_submission, categories):
-    msgs = [
-        f"Please provide proof (image) for {len(unprocessed_submission)} submissions"
-    ]
-    # category_by_id = {
-    #     category.category_id: category
-    #     for category in categories
-    # }
-    # for submission in unprocessed_submission:
-    #     goal = submission.goal
-    #     category = category_by_id.get(goal.category_id)
-    #     if category is None:
-    #         logger.error(
-    #             f"Category {goal.category_id} not found for goal {goal.goal_id}"
-    #         )
-    #         continue
-        
-    #     msgs.append(
-    #         f"\t{category.name}: {goal.goal_description}"
-    #     )
-        
-    return "\n".join(msgs)
+def _format_proof_request_message(unprocessed_submission, categories):        
+    return f"Please provide proof (image) for {len(unprocessed_submission)} submissions"
 
 
 async def process_proofs(
