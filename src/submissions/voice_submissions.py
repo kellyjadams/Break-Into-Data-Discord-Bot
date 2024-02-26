@@ -1,5 +1,6 @@
-from datetime import datetime
 import logging
+
+from datetime import datetime, timezone
 
 from src.database import ensure_user, get_category_for_voice, get_goal, new_submission
 
@@ -18,7 +19,7 @@ async def process_voice_channel_activity(member, before, after):
     user = await ensure_user(member)
 
     if member_joins_channel:
-        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.now(datetime.UTC)
+        VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.now(timezone.utc)
         logger.debug(f'Voice channel activity: {member} joined {after.channel.name}')
 
     if member_leaves_channel:
@@ -27,7 +28,7 @@ async def process_voice_channel_activity(member, before, after):
         if time_joined is None:
             return
         
-        time_left = datetime.utcnow()
+        time_left = datetime.now(timezone.utc)
         time_spent = time_left - time_joined
 
         category = await get_category_for_voice(before.channel.name)
