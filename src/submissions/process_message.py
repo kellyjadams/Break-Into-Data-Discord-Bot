@@ -1,12 +1,9 @@
-from src.models import Goal
 from src.database import (
     get_user_goals, 
     new_submission,
 )
-from src.submissions.llm_submissions import (
-    parse_submission_message,
-    ParsedSubmissionItem,
-)
+from src.submissions.entities import ParsedSubmissionItem
+from src.submissions.llm_submissions import parse_submission_message
 
 
 def _format_parsed_submission_item(submission_item: ParsedSubmissionItem):
@@ -26,8 +23,8 @@ def _format_message(submission_items: list[ParsedSubmissionItem]):
     )
 
 
-async def process_submission_message(message, is_backfill=False):
-    user_goals = await get_user_goals(message.author.id)
+async def process_submission_message(user, message, is_backfill=False):
+    user_goals = await get_user_goals(user.user_id)
 
     if not user_goals:
         if not is_backfill:
@@ -54,7 +51,7 @@ async def process_submission_message(message, is_backfill=False):
 
     for item in submission_items:
         await new_submission(
-            user_id=message.author.id,
+            user_id=user.user_id,
             goal_id=item.goal_id,
             proof_url=None,
             amount=item.value or 0,

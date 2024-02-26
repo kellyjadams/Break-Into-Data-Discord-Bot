@@ -1,7 +1,6 @@
 import csv
 import os
 
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -10,6 +9,7 @@ from openai import AsyncOpenAI
 
 from src.models import Goal
 from src.database import get_categories
+from src.submissions.entities import ParsedSubmissionItem
 
 
 load_dotenv()
@@ -17,14 +17,6 @@ load_dotenv()
 openai_client = AsyncOpenAI(
     api_key=os.environ["OPENAI_API_KEY"]
 )
-
-
-@dataclass
-class ParsedSubmissionItem:
-    category: str
-    goal_id: int
-    value: None | int | bool
-    submission_time: datetime
 
 
 PROMPT = """You will be given a user's message and you task is to you extract all the metrics out of this and return as CSV? Only output CSV, no thoughts
@@ -116,7 +108,7 @@ def _process_submission_item(
     )
 
 
-def _process_csv_submission(
+def process_csv_submission(
         csv_data: str, 
         category_name_to_goal_id: dict[str, int],
         created_at: datetime) -> list[ParsedSubmissionItem]:
@@ -178,4 +170,4 @@ async def parse_submission_message(text: str, created_at: datetime, goals: list[
 
     csv_data = response.choices[0].message.content
 
-    return _process_csv_submission(csv_data, category_name_to_goal_id, created_at)
+    return process_csv_submission(csv_data, category_name_to_goal_id, created_at)

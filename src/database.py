@@ -12,7 +12,10 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import (
+    joinedload,
+    declarative_base,
+)
 
 
 from async_lru import alru_cache
@@ -134,7 +137,7 @@ async def new_goal(user_id, category_id,goal_description, metric, target, freque
         return goal
 
 
-@alru_cache(maxsize=1000)
+@alru_cache(maxsize=1000) 
 async def get_category(text_channel) -> Optional[Category]:
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(Category).where(Category.text_channel == text_channel))).first()
@@ -209,3 +212,28 @@ async def select_raw(query, **params):
 async def get_categories():
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(Category))).fetchall()
+
+
+async def get_submissions_without_proof(user_id, window_hours=24) -> list[Submission]:
+    """ Returns submissions for the last 24 hours without proof. """
+    min_created_at = datetime.datetime.now() - datetime.timedelta(
+        hours=window_hours)
+    
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(
+            select(Submission)
+                .where(Submission.user_id == user_id)
+                .where(Submission.created_at > min_created_at)
+                .where(Submission.proof_url == None)
+                .options(joinedload(Submission.goal))
+        )).fetchall()
+
+
+async def update_submission_proof(submission_id, proof_url):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(Submission).where(
+            Submission.submission_id==submission_id).values(
+                proof_url=proof_url,
+        ).returning(Submission))
+
+    logger.info(f"Updated proof for submission {submission_id}")

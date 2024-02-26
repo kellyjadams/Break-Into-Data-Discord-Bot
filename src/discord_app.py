@@ -29,6 +29,7 @@ from src.onboarding import OnboardingView
 from src.submissions import process_submission_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
+from src.submissions.proof_submission import process_proofs
 
 
 dotenv.load_dotenv()
@@ -265,36 +266,19 @@ async def process_discord_message(message: discord.Message, is_backfill=False):
     if message.author == client.user:
         return
     
-    await ensure_user(message.author)
+    user = await ensure_user(message.author)
     
-    is_channel_correct = (
+    is_submission_channel = (
         str(message.channel.id) == SUBMISSION_CHANNEL_ID 
         or is_backfill
     )
 
-    if is_channel_correct and message.content:
-        await process_submission_message(message, is_backfill=is_backfill)
+    if is_submission_channel:
+        if  message.content:
+            await process_submission_message(user, message, is_backfill=is_backfill)
     
-    if message.attachments:
-        #check - Maybe we should check if user has a goal and if not ask them to declare it. 
-        user = await ensure_user(message.author)
-
-        category = await get_category(message.channel.name)
-        if category is None:
-            return
-
-        goal = await get_goal(category.category_id, user.user_id)
-        if goal is None:
-            return
-
-        for attachment in message.attachments:
-            await new_submission(
-                user_id=user.user_id,
-                goal_id=goal.goal_id,
-                proof_url=attachment.url,
-                amount=0,
-            )
-
+        await process_proofs(user, message)
+        
 
 @client.event
 async def on_message(message):
