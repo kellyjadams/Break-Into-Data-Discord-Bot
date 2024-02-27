@@ -7,17 +7,15 @@ from sqlalchemy import (
     insert, 
     select, 
     text, 
-    update
+    update,
 )
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import (
-    joinedload,
     declarative_base,
+    joinedload,
 )
-
-
 from async_lru import alru_cache
 
 from src.models import (
@@ -234,6 +232,16 @@ async def update_submission_proof(submission_id, proof_url):
         await conn.execute(update(Submission).where(
             Submission.submission_id==submission_id).values(
                 proof_url=proof_url,
-        ).returning(Submission))
+        ))
 
     logger.info(f"Updated proof for submission {submission_id}")
+
+
+async def update_user_last_llm_submission(user_id, last_llm_submission):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(User).where(
+            User.user_id==user_id).values(
+                last_llm_submission=last_llm_submission,
+        ))
+
+    logger.info(f"Updated last_llm_submission for user {user_id}")
