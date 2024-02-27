@@ -38,7 +38,7 @@ class OnboardingButton(discord.ui.Button):
         super().__init__(
             label="Complete Profile", 
             style=discord.ButtonStyle.primary, 
-            custom_id="submit_info"
+            custom_id="submit_info",
         )
 
     async def callback(self, interaction: discord.Interaction):

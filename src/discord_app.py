@@ -273,12 +273,16 @@ async def process_discord_message(message: discord.Message, is_backfill=False):
         str(message.channel.id) == SUBMISSION_CHANNEL_ID 
         or is_backfill
     )
-
-    if is_submission_channel:
-        if  message.content:
-            await process_submission_message(user, message, is_backfill=is_backfill)
     
-        await process_proofs(user, message)
+    if is_submission_channel:
+        should_process_proofs = True
+        
+        if message.content:
+            should_process_proofs = await process_submission_message(
+                user, message, is_backfill=is_backfill)
+    
+        if should_process_proofs:
+            await process_proofs(user, message)
         
 
 @client.event

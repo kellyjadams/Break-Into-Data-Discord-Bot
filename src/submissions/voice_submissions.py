@@ -2,7 +2,12 @@ import logging
 
 from datetime import datetime, timezone
 
-from src.database import ensure_user, get_category_for_voice, get_goal, new_submission
+from src.database import (
+    ensure_user, 
+    get_category_for_voice, 
+    get_goal, 
+    new_submission,
+)
 
 
 logger = logging.getLogger(__name__)
