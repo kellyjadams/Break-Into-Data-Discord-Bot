@@ -48,7 +48,6 @@ def _format_message(user_goals: list[Goal],
 async def _rate_limit_llm_calls(user, window_minutes=120):
     """ Rate limit LLM submissions to once per window """
     now = datetime.now(timezone.utc)
-    breakpoint()
     if user.last_llm_submission is not None:
         time_since_last_submission = now - user.last_llm_submission
         if time_since_last_submission.total_seconds() < window_minutes * 60:
