@@ -11,7 +11,6 @@ import dotenv
 import discord
 from discord import app_commands
 from discord.ext import tasks
-from src.buttons import TrackSettingsView
 
 from src.database import (
     get_user_goals,
@@ -21,8 +20,8 @@ from src.database import (
     get_category,
     new_submission,
 )
-
-from src.buttons import OnboardingView
+from src.models import User
+from src.buttons import TrackSettingsView, OnboardingView
 from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
@@ -48,6 +47,32 @@ logging.basicConfig(
     format='%(asctime)s:%(levelname)s:%(name)s:%(filename)s:line %(lineno)d: %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+def is_user_activated(user: User):
+    """ Checks if the user is activated """
+    return bool(user.email)
+
+
+async def ensure_user_is_activated(user: User, interaction: discord.Interaction) -> bool:
+    """ Checks if the user is activated
+    Sends a message if the user is not activated
+    """
+    
+    if is_user_activated(user):
+        return True
+    
+    message = "Please create a profile first:"
+    view = OnboardingView()
+        
+    if interaction.response.is_done():
+        await interaction.followup.send(
+            message, view=view, ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            message, view=view, ephemeral=True)
+        
+    return False
 
 
 @client.event

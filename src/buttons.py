@@ -2,7 +2,6 @@ import discord
 import logging
 import asyncio
 from dataclasses import dataclass
-from src.models import User
 
 from src.database import (
     get_category_by_name,
@@ -10,6 +9,8 @@ from src.database import (
     new_goal,
     ensure_user,
 )
+from src.discord_app import ensure_user_is_activated
+
 
 @dataclass
 class Track:
@@ -50,31 +51,6 @@ TRACKS = {
               default_daily_target=10),
     ]
 }
-
-def is_user_activated(user: User):
-    """ Checks if the user is activated """
-    return bool(user.email)
-
-
-async def ensure_user_is_activated(user: User, interaction: discord.Interaction) -> bool:
-    """ Checks if the user is activated
-    Sends a message if the user is not activated
-    """
-    
-    if is_user_activated(user):
-        return True
-    
-    message = "Please create a profile first:"
-    view = OnboardingView()
-        
-    if interaction.response.is_done():
-        await interaction.followup.send(
-            message, view=view, ephemeral=True)
-    else:
-        await interaction.response.send_message(
-            message, view=view, ephemeral=True)
-        
-    return False
 
 
 class TrackSettingsModal(discord.ui.Modal):
@@ -159,6 +135,7 @@ class TrackSettingsModal(discord.ui.Modal):
         await interaction.followup.send("Your settings were updated!", ephemeral=True)
         logging.info(f'Goal successfully updated for user {interaction.user}')
 
+
 class TrackSettingsView(discord.ui.View):
     """ Creates a view with the buttons for each track """
     def __init__(self):
@@ -195,6 +172,7 @@ class TrackSettingsView(discord.ui.View):
         await interaction.response.send_modal(modal)
         
         return False
+
 
 class OnboardingModal(discord.ui.Modal):
     def __init__(self):
