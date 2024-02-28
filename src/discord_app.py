@@ -23,10 +23,9 @@ from src.database import (
 )
 
 from src.buttons import OnboardingView
-from src.submissions import process_submission_message
+from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
-from src.submissions.proof_submission import process_proofs
 from src.submissions.voice_submissions import process_voice_channel_activity
 
 
@@ -72,33 +71,13 @@ async def on_ready():
             logging.info(f'No existing message. Sent new message.')
         
     await send_weekly_leaderboard.start()
-
-
-async def process_discord_message(message: discord.Message, is_backfill=False):
-    if message.author == client.user:
-        return
-    
-    user = await ensure_user(message.author)
-    
-    is_submission_channel = (
-        str(message.channel.id) == SUBMISSION_CHANNEL_ID 
-        or is_backfill
-    )
-    
-    if is_submission_channel:
-        should_process_proofs = True
-        
-        if message.content:
-            should_process_proofs = await process_submission_message(
-                user, message, is_backfill=is_backfill)
-    
-        if should_process_proofs:
-            await process_proofs(user, message)
         
 
 @client.event
 async def on_message(message):
-    await process_discord_message(message)
+    if message.author == client.user:
+        return
+    await process_discord_message(message, SUBMISSION_CHANNEL_ID)
 
 
 @client.event
@@ -170,7 +149,7 @@ async def stats_command(interaction):
     statistics = await get_personal_statistics(interaction.user.id)
 
     msg_parts = [
-        f"**Personal stats for the last week **\n"
+        f">>> **Personal stats for the last week **\n"
         f"**{interaction.user.global_name}**\n"
     ] + [
         f"**{category_name}**:\n"
@@ -206,7 +185,7 @@ async def user_goals(interaction):
     if goals:
         msg_parts = [f"{goal.goal_description}: {goal.target} {goal.metric}, {goal.frequency} times a week" for goal in goals]
         goals_message = "\n".join(msg_parts)
-        await interaction.followup.send(f"Here are your current goals:\n{goals_message}", ephemeral=False)
+        await interaction.followup.send(f">>> Here are your current goals:\n{goals_message}", ephemeral=False)
     else:
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
 
@@ -229,7 +208,7 @@ async def send_weekly_leaderboard():
 
     current_date = datetime.now().strftime("%d-%b-%Y")
 
-    msg_parts = [f"**Weekly leaderboard: {current_date}**\n"]
+    msg_parts = [f">>> **Weekly leaderboard: {current_date}**\n"]
 
     for category, leaderboard in leaderboards.items():
         if leaderboard:
