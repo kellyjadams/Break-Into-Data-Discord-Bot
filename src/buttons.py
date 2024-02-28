@@ -76,6 +76,7 @@ async def ensure_user_is_activated(user: User, interaction: discord.Interaction)
         
     return False
 
+
 class TrackSettingsModal(discord.ui.Modal):
     """ Adds user's inputs in the goals table """
     def __init__(self, track: Track):
