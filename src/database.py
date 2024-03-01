@@ -81,7 +81,7 @@ async def save_user_personal_details(discord_user, email, name) -> User:
         return user
 
 
-async def _new_user(user_id, username, email=None) -> User:
+async def _new_user(user_id, username, email=None, time_zone_role=None) -> User:
     """ Create new user
     Always use ensure_user instead of this function
     It's not any faster to use this function,
@@ -92,6 +92,8 @@ async def _new_user(user_id, username, email=None) -> User:
             user_id=user_id,
             username=username,
             email=email,
+            time_zone_role=time_zone_role
+
         ).returning(User))
 
         user = cursor.fetchone()
