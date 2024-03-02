@@ -6,11 +6,12 @@ from datetime import (
     timedelta,
 )
 
+import dotenv
+import discord
+
 from src.discord_app import process_discord_message
 from src.database import init_db
 
-import dotenv
-import discord
 
 dotenv.load_dotenv()
 
@@ -32,7 +33,6 @@ async def iterate_channel_messages(channel: discord.TextChannel, batch_limit: in
         async for message in channel.history(limit=batch_limit, after=after, oldest_first=True): 
             yield message
             after = message
-
 
 
 async def backfill_submissions():  

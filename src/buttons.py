@@ -1,7 +1,8 @@
-import discord
-import logging
 import asyncio
+import logging
 from dataclasses import dataclass
+
+import discord
 
 from src.database import (
     get_category_by_name,
@@ -19,6 +20,7 @@ class Track:
     questions_needed: list
     default_tracking_metric: str
     default_daily_target: str
+
 
 # Setting up logger
 logger = logging.getLogger(__name__)
