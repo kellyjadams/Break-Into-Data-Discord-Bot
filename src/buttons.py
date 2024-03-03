@@ -10,7 +10,7 @@ from src.database import (
     new_goal,
     ensure_user,
 )
-from src.discord_app import ensure_user_is_activated
+from src.models import User
 
 
 @dataclass
@@ -223,3 +223,29 @@ class OnboardingView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(OnboardingButton())
+
+
+def is_user_activated(user: User):
+    """ Checks if the user is activated """
+    return bool(user.email)
+
+
+async def ensure_user_is_activated(user: User, interaction: discord.Interaction) -> bool:
+    """ Checks if the user is activated
+    Sends a message if the user is not activated
+    """
+    
+    if is_user_activated(user):
+        return True
+    
+    message = "Please create a profile first:"
+    view = OnboardingView()
+        
+    if interaction.response.is_done():
+        await interaction.followup.send(
+            message, view=view, ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            message, view=view, ephemeral=True)
+        
+    return False
