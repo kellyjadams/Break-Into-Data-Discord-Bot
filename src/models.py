@@ -1,7 +1,7 @@
 import enum
 from sqlalchemy import (
     Column, Integer, String, DateTime,
-    Float, Boolean, ForeignKey, BigInteger, Enum
+    Float, Boolean, ForeignKey, BigInteger, ARRAY
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
@@ -9,13 +9,7 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
-class TimeZoneEnum(enum.Enum):
-    North_America = "North America"
-    South_America = "South America"
-    Europe = "Europe"
-    Asia = "Asia"
-    Africa = "Africa"
-    Oceania = "Oceania"
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -26,7 +20,7 @@ class User(Base):
     email = Column(String, nullable=True)
     name = Column(String, nullable=True)
     last_llm_submission = Column(DateTime(timezone=True), nullable=True)
-    time_zone_role = Column(Enum(TimeZoneEnum))
+    user_roles = Column(ARRAY(String))
     
     # Reverse relations are defined in the related models
     submissions = relationship("Submission", back_populates="user")

@@ -66,11 +66,12 @@ async def clean_database():
 
 async def save_user_personal_details(discord_user, email, name) -> User:
     user = await ensure_user(discord_user)
-    
+    roles_names = [role.name for role in discord_user.roles]
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(update(User).where(
             User.user_id==user.user_id).values(
                 email=email, name=name,
+                user_roles=roles_names
         ).returning(User))
 
         user = cursor.fetchone()
@@ -81,18 +82,19 @@ async def save_user_personal_details(discord_user, email, name) -> User:
         return user
 
 
-async def _new_user(user_id, username, email=None, time_zone_role=None) -> User:
+async def _new_user(user_id, username, email=None, user_roles=None) -> User:
     """ Create new user
     Always use ensure_user instead of this function
     It's not any faster to use this function,
       because if the user exists, we will not create a new user.
     """
     async with DB_ENGINE.begin() as conn:
+    
         cursor = await conn.execute(insert(User).values(
             user_id=user_id,
             username=username,
             email=email,
-            time_zone_role=time_zone_role
+            user_roles=user_roles
 
         ).returning(User))
 
@@ -191,12 +193,16 @@ async def get_user_goals(user_id):
 
 async def ensure_user(discord_user) -> User:
     user = await get_user(discord_user.id)
+    roles_names = [role.name for role in discord_user.roles]
+    print(roles_names)
     if user is None:
         user = await _new_user(
             user_id=discord_user.id,
             username=discord_user.name,
+            user_roles=roles_names,
         )
     return user
+    
 
 
 async def get_submission_leaderboard():
@@ -247,3 +253,14 @@ async def update_user_last_llm_submission(user_id, last_llm_submission):
         ))
 
     logger.info(f"Updated last_llm_submission for user {user_id}")
+
+
+
+
+
+
+
+
+
+
+

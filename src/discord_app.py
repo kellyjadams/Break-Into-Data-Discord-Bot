@@ -25,6 +25,7 @@ from src.database import (
     new_submission,
 )
 from src.models import User
+from src.notifications import notify_users_in_timezone
 from src.onboarding import OnboardingView
 from src.submissions import process_submission_message
 from src.analytics.personal import get_personal_statistics
@@ -249,6 +250,7 @@ async def on_ready():
     channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
     view = TrackSettingsView()
     logging.info(f'Checking for existing message with goal buttons.')
+
     async for message in channel.history(limit=1):
         if message.author == client.user and 'Pick your goal:' in message.content:
             # Found an existing message to update
@@ -259,7 +261,8 @@ async def on_ready():
             # No existing message found
             await channel.send('Pick your goal:', view=view)
             logging.info(f'No existing message. Sent new message.')
-        
+    
+    await notify_by_timezone.start()
     await send_weekly_leaderboard.start()
 
 
@@ -398,6 +401,22 @@ async def user_goals(interaction):
         await interaction.followup.send(f"Here are your current goals:\n{goals_message}", ephemeral=False)
     else:
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
+
+
+@tasks.loop(hours=1)
+async def notify_by_timezone():
+    logging.info('Sending notifications')
+    TIMEZONE_ROLES = {
+    'admin': 'America/Los_Angeles',  # Example for UTC-5, considering daylight saving
+    'Asia': 'Asia/Kolkata',       # For UTC+5:30
+    'Europe': 'Europe/Paris',     # For UTC+1
+    'North America': 'America/New_York',  # Example for UTC-5, considering daylight saving
+    'South America': 'America/Caracas',   # Example for UTC-4
+    'Africa': 'Africa/Lagos',    # Example for UTC+1
+    'Oceania': 'Asia/Hong_Kong', # Example for UTC+8, though Oceania typically refers to Australia/Pacific islands
+}   
+    for timezone_name, utc_offset in TIMEZONE_ROLES.items():
+        await notify_users_in_timezone(timezone_name, utc_offset)
 
 
 @tasks.loop(hours=24)
