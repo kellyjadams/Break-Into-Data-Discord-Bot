@@ -1,7 +1,15 @@
 import enum
+from datetime import datetime
+
 from sqlalchemy import (
-    Column, Integer, String, DateTime,
-    Float, Boolean, ForeignKey, BigInteger, ARRAY
+    Column,
+    Integer,
+    String, 
+    DateTime,
+    Float, 
+    Boolean, 
+    ForeignKey, 
+    BigInteger, 
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
@@ -9,6 +17,14 @@ from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+
+class TimeZoneEnum(enum.Enum):
+    North_America = -5
+    South_America = -3
+    Europe = 1
+    Asia = 5
+    Africa = 3
+    Oceania = 11
 
 
 class User(Base):
@@ -20,7 +36,7 @@ class User(Base):
     email = Column(String, nullable=True)
     name = Column(String, nullable=True)
     last_llm_submission = Column(DateTime(timezone=True), nullable=True)
-    user_roles = Column(ARRAY(String))
+    time_zone_shift = Column(Integer, nullable=True)
     
     # Reverse relations are defined in the related models
     submissions = relationship("Submission", back_populates="user")
@@ -69,4 +85,3 @@ class Goal(Base):
     user = relationship("User", back_populates="goals")
     category = relationship("Category", back_populates="goals")
     submissions = relationship("Submission", back_populates="goal")
-

@@ -15,7 +15,6 @@ from discord.ext import tasks
 
 from src.database import (
     get_category_by_name,
-    get_category_for_voice,
     get_user_goals,
     init_db,
     get_goal,
@@ -25,7 +24,7 @@ from src.database import (
     new_submission,
 )
 from src.models import User
-from src.notifications import notify_users_in_timezone
+from src.notifications.notifications import send_daily_notifications
 from src.onboarding import OnboardingView
 from src.submissions import process_submission_message
 from src.analytics.personal import get_personal_statistics
@@ -263,7 +262,7 @@ async def on_ready():
             logging.info(f'No existing message. Sent new message.')
     
     await notify_by_timezone.start()
-    await send_weekly_leaderboard.start()
+    # await send_weekly_leaderboard.start()
 
 
 async def process_discord_message(message: discord.Message, is_backfill=False):
@@ -405,19 +404,8 @@ async def user_goals(interaction):
 
 @tasks.loop(hours=1)
 async def notify_by_timezone():
-    logging.info('Sending notifications')
-    TIMEZONE_ROLES = {
-    'admin': 'America/Los_Angeles',  # Example for UTC-5, considering daylight saving
-    'Asia': 'Asia/Kolkata',       # For UTC+5:30
-    'Europe': 'Europe/Paris',     # For UTC+1
-    'North America': 'America/New_York',  # Example for UTC-5, considering daylight saving
-    'South America': 'America/Caracas',   # Example for UTC-4
-    'Africa': 'Africa/Lagos',    # Example for UTC+1
-    'Oceania': 'Asia/Hong_Kong', # Example for UTC+8, though Oceania typically refers to Australia/Pacific islands
-}   
-    for timezone_name, utc_offset in TIMEZONE_ROLES.items():
-        await notify_users_in_timezone(timezone_name, utc_offset)
-
+    await send_daily_notifications(client)
+    
 
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():

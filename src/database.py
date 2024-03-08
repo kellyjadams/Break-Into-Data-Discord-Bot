@@ -3,7 +3,8 @@ import logging
 from typing import Optional
 
 from sqlalchemy import (
-    delete, 
+    delete,
+    func, 
     insert, 
     select, 
     text, 
@@ -82,7 +83,7 @@ async def save_user_personal_details(discord_user, email, name) -> User:
         return user
 
 
-async def _new_user(user_id, username, email=None, user_roles=None) -> User:
+async def _new_user(user_id, username) -> User:
     """ Create new user
     Always use ensure_user instead of this function
     It's not any faster to use this function,
@@ -93,9 +94,6 @@ async def _new_user(user_id, username, email=None, user_roles=None) -> User:
         cursor = await conn.execute(insert(User).values(
             user_id=user_id,
             username=username,
-            email=email,
-            user_roles=user_roles
-
         ).returning(User))
 
         user = cursor.fetchone()
@@ -193,14 +191,13 @@ async def get_user_goals(user_id):
 
 async def ensure_user(discord_user) -> User:
     user = await get_user(discord_user.id)
-    roles_names = [role.name for role in discord_user.roles]
-    print(roles_names)
+    
     if user is None:
         user = await _new_user(
             user_id=discord_user.id,
             username=discord_user.name,
-            user_roles=roles_names,
         )
+    
     return user
     
 
@@ -255,12 +252,38 @@ async def update_user_last_llm_submission(user_id, last_llm_submission):
     logger.info(f"Updated last_llm_submission for user {user_id}")
 
 
+async def update_user_timezone_shift(user_id, timezone_shift):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(User).where(
+            User.user_id==user_id).values(
+                time_zone_shift=timezone_shift,
+        ))
+
+    logger.info(f"Updated time_zone_shift for user {user_id}")
 
 
+async def get_users_without_timezone_shift():
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(
+            select(User.user_id)
+                .where(User.time_zone_shift == None)
+        )).fetchall()
 
 
+async def get_users_to_notify(timezone_shift: int):
+    logger.info(f"Fetching users to notify for timezone {timezone_shift}")
 
+    stmt = (
+        select(User.username, func.count(Submission.submission_id))
+        .join(Goal, User.user_id == Goal.user_id)
+        .outerjoin(Submission, (User.user_id == Submission.user_id) & (Submission.created_at > text("NOW() - INTERVAL '1 DAY'")))
+        .where(User.time_zone_shift > timezone_shift - 2)
+        .where(User.time_zone_shift < timezone_shift + 2)
+        .group_by(User.user_id)
+        .having(func.count(Submission.submission_id) == 0)
+    )
+    
+    async with DB_ENGINE.begin() as conn:
+        rows = (await conn.execute(stmt)).fetchall()
 
-
-
-
+    return rows
