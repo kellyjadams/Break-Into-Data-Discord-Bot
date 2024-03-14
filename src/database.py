@@ -103,6 +103,7 @@ async def _new_user(user_id, username, email=None, time_zone_role=None) -> User:
         logger.info(f"New user created: {username} with ID {user_id}")
         return user
 
+
 async def new_submission(user_id, goal_id, proof_url, amount, created_at=None) -> Submission:
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(Submission).values(

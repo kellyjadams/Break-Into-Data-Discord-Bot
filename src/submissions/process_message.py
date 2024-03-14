@@ -1,3 +1,4 @@
+import discord
 from datetime import (
     datetime, 
     timezone,
@@ -6,12 +7,14 @@ from datetime import (
 from src.database import (
     get_categories,
     get_user_goals, 
+    ensure_user,
     new_submission,
     update_user_last_llm_submission,
 )
 from src.models import Goal
 from src.submissions.entities import ParsedSubmissionItem
 from src.submissions.llm_submissions import parse_submission_message
+from src.submissions.proof_submission import process_proofs
 
 
 def _format_parsed_submission_item(submission_item: ParsedSubmissionItem):
@@ -104,3 +107,23 @@ async def process_submission_message(user, message, is_backfill=False):
         )
 
     return True
+
+
+async def process_discord_message(message: discord.Message,  channel_id: str, is_backfill=False):
+    
+    user = await ensure_user(message.author)
+    
+    is_submission_channel = (
+        str(message.channel.id) == channel_id 
+        or is_backfill
+    )
+    
+    if is_submission_channel:
+        should_process_proofs = True
+        
+        if message.content:
+            should_process_proofs = await process_submission_message(
+                user, message, is_backfill=is_backfill)
+    
+        if should_process_proofs:
+            await process_proofs(user, message)
