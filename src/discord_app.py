@@ -41,8 +41,9 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 
+intents = discord.Intents.all()
 client = discord.Client(
-    intents=discord.Intents.all(),
+    intents=intents,
 )
 
 logging.basicConfig(
@@ -248,21 +249,21 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
     channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
     view = TrackSettingsView()
-    logging.info(f'Checking for existing message with goal buttons.')
+    logging.info('Checking for existing message with goal buttons.')
 
     async for message in channel.history(limit=1):
         if message.author == client.user and 'Pick your goal:' in message.content:
             # Found an existing message to update
             await message.edit(content='Pick your goal:', view=view)
-            logging.info(f'Updated existing message with goal buttons.')
+            logging.info('Updated existing message with goal buttons.')
             break
         else:
             # No existing message found
             await channel.send('Pick your goal:', view=view)
-            logging.info(f'No existing message. Sent new message.')
+            logging.info('No existing message. Sent new message.')
     
     await notify_by_timezone.start()
-    # await send_weekly_leaderboard.start()
+    await send_weekly_leaderboard.start()
 
 
 async def process_discord_message(message: discord.Message, is_backfill=False):

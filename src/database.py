@@ -259,13 +259,13 @@ async def update_user_timezone_shift(user_id, timezone_shift):
                 time_zone_shift=timezone_shift,
         ))
 
-    logger.info(f"Updated time_zone_shift for user {user_id}")
+    logger.info(f"Updated time_zone_shift for user {user_id} (shift={timezone_shift})")
 
 
 async def get_users_without_timezone_shift():
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(
-            select(User.user_id)
+            select(User.user_id, User.time_zone_shift)
                 .where(User.time_zone_shift == None)
         )).fetchall()
 
