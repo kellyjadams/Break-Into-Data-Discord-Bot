@@ -13,6 +13,7 @@ from discord import app_commands
 from discord.ext import tasks
 
 from src.database import (
+    get_category_by_name,
     get_user_goals,
     init_db,
     get_goal,
@@ -20,6 +21,8 @@ from src.database import (
     get_category,
     new_submission,
 )
+
+from src.notifications.notifications import send_daily_notifications
 from src.buttons import TrackSettingsView, OnboardingView
 from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
@@ -35,8 +38,9 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 
+intents = discord.Intents.all()
 client = discord.Client(
-    intents=discord.Intents.all(),
+    intents=intents,
 )
 
 logging.basicConfig(
@@ -56,20 +60,22 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
     channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
     view = TrackSettingsView()
-    logging.info(f'Checking for existing message with goal buttons.')
+    logging.info('Checking for existing message with goal buttons.')
+
     async for message in channel.history(limit=1):
         if message.author == client.user and 'Pick your goal:' in message.content:
             # Found an existing message to update
             await message.edit(content='Pick your goal:', view=view)
-            logging.info(f'Updated existing message with goal buttons.')
+            logging.info('Updated existing message with goal buttons.')
             break
         else:
             # No existing message found
             await channel.send('Pick your goal:', view=view)
-            logging.info(f'No existing message. Sent new message.')
-        
+            logging.info('No existing message. Sent new message.')
+    
+    await notify_by_timezone.start()
     await send_weekly_leaderboard.start()
-        
+
 
 @client.event
 async def on_message(message):
@@ -187,6 +193,11 @@ async def user_goals(interaction):
     else:
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
 
+
+@tasks.loop(hours=1)
+async def notify_by_timezone():
+    await send_daily_notifications(client)
+    
 
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():

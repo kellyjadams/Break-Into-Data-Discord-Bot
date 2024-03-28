@@ -13,8 +13,12 @@ from src.database import (
 logger = logging.getLogger(__name__)
 
 
-def _format_proof_request_message(unprocessed_submission, categories):        
-    return f"Please provide proof (image) for {len(unprocessed_submission)} submissions"
+def _format_proof_request_message(unprocessed_submission, categories):
+    msgs = [
+        f"Please provide proof (image) for {len(unprocessed_submission)} submissions"
+    ]
+        
+    return "\n".join(msgs)
 
 
 async def process_proofs(

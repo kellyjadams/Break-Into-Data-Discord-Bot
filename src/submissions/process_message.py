@@ -110,7 +110,6 @@ async def process_submission_message(user, message, is_backfill=False):
 
 
 async def process_discord_message(message: discord.Message,  channel_id: str, is_backfill=False):
-    
     user = await ensure_user(message.author)
     
     is_submission_channel = (
