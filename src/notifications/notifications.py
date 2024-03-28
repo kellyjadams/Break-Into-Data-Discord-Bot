@@ -37,8 +37,8 @@ async def notify_users_in_timezone(notification_channel, utc_offset):
         for idx in range(0, len(users_to_notify), batch_size):
             batch = users_to_notify[idx:idx + batch_size]
             msg = '\n'.join([
-                f'Hey <{username}>! It\'s time to submit your daily goal!\n'
-                f'You have submitted {submissions_count} goals so far. :tada:\n'
+                f'Hey @{username}! It\'s time to submit your daily goal!\n'
+                f'You have submitted **{submissions_count}** goals so far. :tada:\n'
                 for username, submissions_count in batch
             ])
 
