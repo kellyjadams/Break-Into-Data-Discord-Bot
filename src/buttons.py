@@ -17,40 +17,13 @@ from src.models import User
 class Track:
     name: str
 
-    questions_needed: list
-    default_tracking_metric: str
-    default_daily_target: str
-
 
 # Setting up logger
 logger = logging.getLogger(__name__)
 
 TRACKS = {
     track.name: track for track in [
-        Track(name="Fitness",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="e.g. miles, minutes ",
-              default_daily_target='e.g.30'),
-        Track(name="Coding",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="e.g. problems, minutes", 
-              default_daily_target='e.g. 3 or 5'),
-        Track(name="Studying",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="e.g. minutes, chapters", 
-              default_daily_target='60 or 2'),
-        Track(name="Meditation",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="e.g. minutes, sessions",
-              default_daily_target='60 or 2'),
-        Track(name="Content Creation",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="e.g. posts, videos, blogs", 
-              default_daily_target='1 or 2'),
-        Track(name="Other",
-              questions_needed=['description', 'metric', 'target', 'frequency'],
-              default_tracking_metric="Smiles", 
-              default_daily_target=10),
+        Track(name="Setup"),
     ]
 }
 
@@ -61,55 +34,15 @@ class TrackSettingsModal(discord.ui.Modal):
         super().__init__(title=track.name)
         self.track = track
 
-        if 'description' in track.questions_needed:
-            # New field for their
-            self.description_input = discord.ui.TextInput(
-                label="Description",
-                required=True,
-                placeholder="Describe your goal!")
-            self.add_item(self.description_input)
-
-
-        if 'metric' in track.questions_needed:
-            self.metric_input = discord.ui.TextInput(
-                label="What is your metric?",
-                placeholder=track.default_tracking_metric)
-            self.add_item(self.metric_input)
-
-
-        target_map = {
-            'Coding': 'Daily coding goals? 5 problems/2 hours',
-            'Meditation': 'Set your meditation goal',
-            'Fitness': 'What is your exercise target?',
-            'Studying': 'Set your study goal',
-            'Content Creation': 'How much content to make?',
-            'Other': 'Set your Number to measure.'
-        }
-
-        if 'target' in track.questions_needed:
-            self.daily_target_input = discord.ui.TextInput(
-                label=target_map[track.name],
-                placeholder=f"{track.default_daily_target} (it must be a number)")
-            self.add_item(self.daily_target_input)
-
-        # New field for frequency
-        if 'frequency' in track.questions_needed:
-            self.frequency_input = discord.ui.TextInput(
-                label="What is the frequency per week? ",
-                placeholder="e.g. 4, 5 (times a week) ")
-            self.add_item(self.frequency_input)
+        self.description_input = discord.ui.TextInput(
+            label="Description",
+            required=True,
+            placeholder="Describe your goal here")
+        self.add_item(self.description_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         """ Makes sure the user input a number and not a string """
         logging.info(f'Goal submission attempt by {interaction.user}')
-        try:
-            daily_target = int(self.daily_target_input.value.strip())
-        except ValueError:
-            await interaction.response.send_message(
-                "Daily target must be a valid number, please try again",
-                ephemeral=True)
-            return
-
         await interaction.response.defer(thinking=True, ephemeral=True)
     
         # Checking user exists just to avoid any tricky edge cases
@@ -128,10 +61,10 @@ class TrackSettingsModal(discord.ui.Modal):
         await new_goal(
             user_id=user.user_id,
             category_id=category.category_id,
-            goal_description=self.description_input.value if 'description' in self.track.questions_needed else '',
-            metric=self.metric_input.value if 'metric' in self.track.questions_needed else self.track.name,
-            target=daily_target,
-            frequency=self.frequency_input.value if 'frequency' in self.track.questions_needed else 'daily'
+            goal_description=self.description_input.value,
+            metric='',
+            target=1,
+            frequency=''
         )
 
         await interaction.followup.send("Your settings were updated!", ephemeral=True)

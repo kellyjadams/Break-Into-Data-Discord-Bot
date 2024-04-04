@@ -162,16 +162,6 @@ async def stats_command(interaction):
 
 
 @tree.command(
-        name="backfill",
-        description="To get existing users name and email",
-        guild=discord.Object(id=DISCORD_SERVER_ID),
-)
-async def backfill(interaction):
-    view = OnboardingView()
-    await interaction.response.send_message("Click the button below:", view=view, ephemeral=False)
-
-
-@tree.command(
         name="goals",
         description="To get your active goals",
         guild=discord.Object(id=DISCORD_SERVER_ID),
