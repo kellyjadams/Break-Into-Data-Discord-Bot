@@ -14,7 +14,6 @@ from src.database import (
 from src.models import Goal
 from src.submissions.entities import ParsedSubmissionItem
 from src.submissions.llm_submissions import parse_submission_message
-from src.submissions.proof_submission import process_proofs
 
 
 def _format_parsed_submission_item(submission_item: ParsedSubmissionItem):

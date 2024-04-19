@@ -31,7 +31,7 @@ class User(Base):
     # Reverse relations are defined in the related models
     submissions = relationship("Submission", back_populates="user")
     goals = relationship("Goal", back_populates="user")
-
+    
 
 class Submission(Base):
     __tablename__ = 'submissions'

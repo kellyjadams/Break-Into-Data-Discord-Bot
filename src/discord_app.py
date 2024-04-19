@@ -51,22 +51,23 @@ logger = logging.getLogger(__name__)
 @client.event
 async def on_ready():
     """ Runs when the client becomes ready """
-    logging.info(f'Logged in as {client.user}')
+    logging.info('Logged in as %s', client.user)
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
     channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
     view = TrackSettingsView()
-    logging.info(f'Checking for existing message with goal buttons.')
+    logging.info('Checking for existing message with goal buttons.')
     async for message in channel.history(limit=1):
-        if message.author == client.user and 'Pick your goal:' in message.content:
+        msg_header = "**Pick your goal:**"
+        if message.author == client.user and msg_header in message.content:
             # Found an existing message to update
-            await message.edit(content='Pick your goal:', view=view)
-            logging.info(f'Updated existing message with goal buttons.')
+            await message.edit(content=msg_header, view=view)
+            logging.info('Updated existing message with goal buttons.')
             break
         else:
             # No existing message found
-            await channel.send('Pick your goal:', view=view)
-            logging.info(f'No existing message. Sent new message.')
+            await channel.send(msg_header, view=view)
+            logging.info('No existing message. Sent new message.')
         
     await send_weekly_leaderboard.start()
         
