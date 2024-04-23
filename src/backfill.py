@@ -9,7 +9,7 @@ from datetime import (
 import dotenv
 import discord
 
-from src.discord_app import process_discord_message
+from src.submissions.process_message import process_discord_message
 from src.database import init_db
 
 
