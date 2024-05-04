@@ -44,7 +44,7 @@ async def init_db(database_url: str):
         )
         logger.info("Database initialized successfully.")
     except Exception:
-        logger.exception(f"Failed to initialize database")
+        logger.exception("Failed to initialize database")
 
 
 async def close_db():
@@ -102,7 +102,10 @@ async def _new_user(user_id, username) -> User:
         return user
 
 
-async def new_submission(user_id, goal_id, proof_url, amount, created_at=None) -> Submission:
+async def new_submission(
+    user_id, goal_id, proof_url, amount, 
+    created_at=None, is_voice=False,
+) -> Submission:
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(Submission).values(
             user_id=user_id,
@@ -110,10 +113,11 @@ async def new_submission(user_id, goal_id, proof_url, amount, created_at=None) -
             proof_url=proof_url,
             created_at=created_at or datetime.datetime.now(datetime.UTC),
             amount=amount,
+            is_voice=is_voice,
         ).returning(Submission))
 
         submission = cursor.fetchone()
-        logger.info(f"Submission attempt for {user_id}")
+        logger.info(f"New submission for user {user_id}")
         return submission
 
 
@@ -145,13 +149,19 @@ async def get_category(text_channel) -> Optional[Category]:
 @alru_cache(maxsize=1000)
 async def get_category_by_name(name) -> Optional[Category]:
     async with DB_ENGINE.begin() as conn:
-        return (await conn.execute(select(Category).where(Category.name == name))).first()
+        return (await conn.execute(select(Category).where(
+            Category.name == name))).first()
 
 
 @alru_cache(maxsize=1000)
 async def get_category_for_voice(voice_channel) -> Optional[Category]:
+    # 30_days_ml_5 -> 30_days_ml
+    if voice_channel.rsplit('_', 1)[-1].isdigit():
+        voice_channel = voice_channel.rsplit('_', 1)[0]
+        
     async with DB_ENGINE.begin() as conn:
-        return (await conn.execute(select(Category).where(Category.voice_channel == voice_channel))).first()
+        return (await conn.execute(select(Category).where(
+            Category.voice_channel == voice_channel))).first()
 
 
 @alru_cache(maxsize=1000)
