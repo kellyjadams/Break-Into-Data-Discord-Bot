@@ -63,8 +63,8 @@ async def on_ready():
     view = TrackSettingsView()
     logging.info('Checking for existing message with goal buttons.')
 
+    msg_header = "**Pick your goal:**"
     async for message in channel.history(limit=2):
-        msg_header = "**Pick your goal:**"
         if message.author == client.user and msg_header in message.content:
             # Found an existing message to update
             await message.edit(content=msg_header, view=view)
@@ -78,8 +78,8 @@ async def on_ready():
     channel = await client.fetch_channel(CHALLENGE_30DAYS_ML_CHANNEL_ID)
     logging.info('Checking for existing message with 30d ML buttons.')
     view_30days_ml = Challenge30DaysML()
+    msg_header = "**30 Days ML Challenge**"
     async for message in channel.history(limit=2):
-        msg_header = "**30 Days ML Challenge**"
         if message.author == client.user and msg_header in message.content:
             # Found an existing message to update
             await message.edit(content=msg_header, view=view_30days_ml)
