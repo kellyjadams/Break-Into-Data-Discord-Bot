@@ -135,11 +135,13 @@ async def parse_submission_message(text: str, created_at: datetime, goals: list[
     categories = {
         category.category_id: category.name
         for category in await get_categories()
+        if category.allow_llm_submissions
     }
 
     category_name_to_goal_id = {
         categories[goal.category_id]: goal.goal_id
         for goal in goals
+        if goal.category_id in categories
     }
 
     category_info = [
@@ -149,6 +151,7 @@ async def parse_submission_message(text: str, created_at: datetime, goals: list[
             metric=goal.metric
         )
         for goal in goals
+        if goal.category_id in categories
     ]
 
     prompt = PROMPT.format(

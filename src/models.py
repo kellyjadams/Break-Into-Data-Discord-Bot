@@ -41,7 +41,7 @@ class User(Base):
     # Reverse relations are defined in the related models
     submissions = relationship("Submission", back_populates="user")
     goals = relationship("Goal", back_populates="user")
-
+    
 
 class Submission(Base):
     __tablename__ = 'submissions'
@@ -52,6 +52,7 @@ class Submission(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     proof_url = Column(String, nullable=True)
     amount = Column(Float)
+    is_voice = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="submissions")
     goal = relationship("Goal", back_populates="submissions")
@@ -64,6 +65,7 @@ class Category(Base):
     name = Column(String)
     text_channel = Column(String)
     voice_channel = Column(String)
+    allow_llm_submissions = Column(Boolean, default=True)
 
     goals = relationship("Goal", back_populates="category")
 

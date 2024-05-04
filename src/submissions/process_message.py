@@ -14,7 +14,6 @@ from src.database import (
 from src.models import Goal
 from src.submissions.entities import ParsedSubmissionItem
 from src.submissions.llm_submissions import parse_submission_message
-from src.submissions.proof_submission import process_proofs
 
 
 def _format_parsed_submission_item(submission_item: ParsedSubmissionItem):
@@ -124,5 +123,6 @@ async def process_discord_message(message: discord.Message,  channel_id: str, is
             should_process_proofs = await process_submission_message(
                 user, message, is_backfill=is_backfill)
     
-        if should_process_proofs:
-            await process_proofs(user, message)
+        # proofs are disabled intentionally for UX purposes
+        # if should_process_proofs:
+        #     await process_proofs(user, message)
