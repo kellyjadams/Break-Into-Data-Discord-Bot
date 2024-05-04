@@ -149,21 +149,15 @@ class TrackSettingsView(discord.ui.View):
             custom_id="setup_btn",
             row=1,
         ))
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.type != discord.InteractionType.component:
-            return True
         
-        if interaction.data.get("custom_id") != "setup_btn":
-            await interaction.response.defer()
-            return True
+    async def setup_goals(self, interaction: discord.Interaction):        
         if len(self.category_select.values) == 0:
             await interaction.response.send_message(
                 "Please select a category first!",
                 ephemeral=True,
             )
             return False
-
+        
         user = await ensure_user(interaction.user)
 
         track = TRACKS.get(self.category_select.values[0])
@@ -183,6 +177,18 @@ class TrackSettingsView(discord.ui.View):
         await interaction.response.send_modal(modal)
 
         return False
+    
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.type != discord.InteractionType.component:
+            return True
+
+        if interaction.data.get("custom_id") == "setup_btn":
+            return await self.setup_goals(interaction)
+        
+        await interaction.response.defer()
+        
+        return False
+        
 
 
 class OnboardingModal(discord.ui.Modal):

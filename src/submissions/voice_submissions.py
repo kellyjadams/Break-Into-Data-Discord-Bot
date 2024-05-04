@@ -25,10 +25,10 @@ async def process_voice_channel_activity(member, before, after):
 
     if member_joins_channel:
         VOICE_CHANNELS_JOIN_TIME[user.user_id] = datetime.now(timezone.utc)
-        logger.debug(f'Voice channel activity: {member} joined {after.channel.name}')
+        logger.info(f'Voice channel activity: {member} joined {after.channel.name}')
 
     if member_leaves_channel:
-        logger.debug(f'Voice channel activity: {member} left {before.channel.name}')
+        logger.info(f'Voice channel activity: {member} left {before.channel.name}')
         time_joined = VOICE_CHANNELS_JOIN_TIME.pop(user.user_id, None)
         if time_joined is None:
             return
@@ -38,6 +38,7 @@ async def process_voice_channel_activity(member, before, after):
 
         category = await get_category_for_voice(before.channel.name)
         if category is None:
+            logger.info(f'Category not found for voice channel {before.channel.name}')
             return
 
         goal = await get_goal(category.category_id, user.user_id)
@@ -48,5 +49,6 @@ async def process_voice_channel_activity(member, before, after):
             user_id=user.user_id,
             goal_id=goal.goal_id,
             proof_url=None,
-            amount=time_spent.seconds // 60,
+            amount=int(round(time_spent.seconds / 60 + 0.5)),
+            is_voice=True,
         )
