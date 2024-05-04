@@ -156,8 +156,9 @@ async def get_category_by_name(name) -> Optional[Category]:
 @alru_cache(maxsize=1000)
 async def get_category_for_voice(voice_channel) -> Optional[Category]:
     # 30_days_ml_5 -> 30_days_ml
-    if voice_channel.rsplit('_', 1)[-1].isdigit():
-        voice_channel = voice_channel.rsplit('_', 1)[0]
+    voice_channel_parts = voice_channel.rsplit('_', 1)
+    if voice_channel_parts[-1].isdigit():
+        voice_channel = voice_channel_parts[0]
         
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(Category).where(
