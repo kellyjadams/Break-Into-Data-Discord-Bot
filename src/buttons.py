@@ -158,8 +158,6 @@ class TrackSettingsView(discord.ui.View):
             )
             return False
         
-        # await interaction.response.defer(thinking=True, ephemeral=True)
-
         user = await ensure_user(interaction.user)
 
         track = TRACKS.get(self.category_select.values[0])
