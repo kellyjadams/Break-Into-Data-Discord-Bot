@@ -5,7 +5,10 @@ from src.database import ensure_user, get_category_by_name, new_goal
 from src.buttons import ensure_user_is_activated
 
 
-ROLE_ID = 1236401709719355554
+TEST_ROLE_ID = 1236401709719355554
+PROD_ROLE_ID = 1236401067495788616
+# TODO: move to config
+ROLE_ID = PROD_ROLE_ID
 CATEGORY_NAME = "30 Days ML"
 
 
