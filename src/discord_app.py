@@ -1,5 +1,5 @@
-import asyncio
 import os
+import asyncio
 import logging
 from datetime import (
     datetime, 
@@ -26,6 +26,7 @@ from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
 from src.submissions.voice_submissions import process_voice_channel_activity
+from src.ui.connected_platforms import ConnectExternalPlatform
 from src.ui.ml_30days import Challenge30DaysML
 
 
@@ -60,40 +61,48 @@ async def on_ready():
     logging.info('Logged in as %s', client.user)
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
-    channel = await client.fetch_channel(SETTINGS_CHANNEL_ID)
-    view = TrackSettingsView()
-    logging.info('Checking for existing message with goal buttons.')
 
-    msg_header = "**Pick your goal:**"
-    async for message in channel.history(limit=2):
-        if message.author == client.user and msg_header in message.content:
-            # Found an existing message to update
-            await message.edit(content=msg_header, view=view)
-            logging.info('Updated existing message with goal buttons.')
-            break
-    else:
-        # No existing message found
-        await channel.send(msg_header, view=view)
-        logging.info('No existing message. Sent new message.')
-            
-    channel = await client.fetch_channel(CHALLENGE_30DAYS_ML_CHANNEL_ID)
-    logging.info('Checking for existing message with 30d ML buttons.')
-    view_30days_ml = Challenge30DaysML()
-    msg_header = "**30 Days ML Challenge**"
-    async for message in channel.history(limit=2):
-        if message.author == client.user and msg_header in message.content:
-            # Found an existing message to update
-            await message.edit(content=msg_header, view=view_30days_ml)
-            logging.info('30 Days ML - Updated existing message.')
-            break
-    else:
-        # No existing message found
-        await channel.send(msg_header, view=view_30days_ml)
-        logging.info('30 Days ML - No existing message. Sent new message.')
+    await _upsert_message_in_channel(
+        client, 
+        view=TrackSettingsView(), 
+        channel_id=SETTINGS_CHANNEL_ID,
+        msg_header="**Pick your goal:**",
+    )
+    
+    await _upsert_message_in_channel(
+        client, 
+        view=ConnectExternalPlatform(), 
+        channel_id=SETTINGS_CHANNEL_ID,
+        msg_header="**Connect external platforms:**",
+    )
+    
+    # await _upsert_message_in_channel(
+    #     client, 
+    #     view=Challenge30DaysML(), 
+    #     channel_id=CHALLENGE_30DAYS_ML_CHANNEL_ID,
+    #     msg_header="**30 Days ML Challenge**",
+    # )
             
     await notify_by_timezone.start()
 
     await send_weekly_leaderboard.start()
+
+
+async def _upsert_message_in_channel(client, view, channel_id, msg_header):
+    channel = await client.fetch_channel(channel_id)
+    
+    logging.info('Checking for existing message with goal buttons.')
+
+    async for message in channel.history(limit=10):
+        if message.author == client.user and msg_header in message.content:
+            # Found an existing message to update
+            await message.edit(content=msg_header, view=view)
+            logging.info(f'Updated existing message ({msg_header}).')
+            break
+    else:
+        # No existing message found
+        await channel.send(msg_header, view=view)
+        logging.info(f'No existing message. Sent new message ({msg_header}).')
 
 
 @client.event
