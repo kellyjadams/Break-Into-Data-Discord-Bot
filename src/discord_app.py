@@ -39,6 +39,7 @@ SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
 CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
 
+
 intents = discord.Intents.all()
 client = discord.Client(
     intents=intents,

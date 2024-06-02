@@ -48,11 +48,12 @@ class Submission(Base):
 
     submission_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
-    goal_id = Column(Integer, ForeignKey('goals.goal_id'))
+    goal_id = Column(Integer, ForeignKey('goals.goal_id'), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     proof_url = Column(String, nullable=True)
     amount = Column(Float)
     is_voice = Column(Boolean, default=False)
+    voice_channel = Column(String, nullable=True)
 
     user = relationship("User", back_populates="submissions")
     goal = relationship("Goal", back_populates="submissions")
@@ -87,3 +88,13 @@ class Goal(Base):
     user = relationship("User", back_populates="goals")
     category = relationship("Category", back_populates="goals")
     submissions = relationship("Submission", back_populates="goal")
+
+
+class Leaderboard(Base):
+    __tablename__ = 'leaderboards'
+    
+    leaderboard_id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    name = Column(String, nullable=False)
+    voice_channels = Column(String, nullable=False)
+    last_sent = Column(DateTime(timezone=True), nullable=True)

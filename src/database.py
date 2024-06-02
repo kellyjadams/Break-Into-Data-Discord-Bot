@@ -3,28 +3,30 @@ import logging
 from typing import Optional
 
 from sqlalchemy import (
-    delete,
-    func, 
-    insert, 
-    select, 
-    text, 
+    func,
+    text,
+    insert,
+    select,
     update,
+    delete,
 )
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import (
-    declarative_base,
     joinedload,
+    declarative_base,
 )
 from async_lru import alru_cache
 
 from src.models import (
-    Category,
     User,
-    Submission,
     Goal,
+    Category,
+    Submission,
+    Leaderboard,
 )
+
 
 # Setting up logger
 logger = logging.getLogger(__name__)
@@ -50,19 +52,6 @@ async def init_db(database_url: str):
 async def close_db():
     if DB_ENGINE is not None:
         await DB_ENGINE.dispose()
-
-
-async def clean_database():
-    if input("Are you sure you want to drop everything? (y/n) ") != 'y':
-        print('Skipping')
-        return
-
-    async with DB_ENGINE.begin() as conn:
-        print()
-        print(await conn.execute(delete(Submission)))
-        print(await conn.execute(delete(Goal)))
-        print(await conn.execute(delete(User)))
-        print()
 
 
 async def save_user_personal_details(discord_user, email, name) -> User:
@@ -104,7 +93,7 @@ async def _new_user(user_id, username) -> User:
 
 async def new_submission(
     user_id, goal_id, proof_url, amount, 
-    created_at=None, is_voice=False,
+    created_at=None, voice_channel: str = None,
 ) -> Submission:
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(Submission).values(
@@ -113,7 +102,8 @@ async def new_submission(
             proof_url=proof_url,
             created_at=created_at or datetime.datetime.now(datetime.UTC),
             amount=amount,
-            is_voice=is_voice,
+            is_voice=voice_channel is not None,
+            voice_channel=voice_channel,
         ).returning(Submission))
 
         submission = cursor.fetchone()
@@ -297,3 +287,28 @@ async def get_users_to_notify(timezone_shift: int):
         rows = (await conn.execute(stmt)).fetchall()
 
     return rows
+
+
+async def list_leaderboards() -> list[Leaderboard]:
+    async with DB_ENGINE.begin() as conn:
+        leaderboards = await conn.execute(select(Leaderboard))
+        return leaderboards.fetchall()
+
+
+async def update_leaderboard_last_sent(leaderboard_id, timestamp):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(Leaderboard).where(
+            Leaderboard.leaderboard_id==leaderboard_id).values(
+                last_sent=timestamp,
+        ))
+
+    logger.info(f"Updated last_sent for leaderboard {leaderboard_id}")
+
+
+async def list_submissions_by_voice_channel(voice_channel) -> Submission:
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(
+            select(Submission)
+                .where(Submission.voice_channel == voice_channel)
+                .order_by(Submission.created_at)
+        )).fetchall()
