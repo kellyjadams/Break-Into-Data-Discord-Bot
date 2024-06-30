@@ -86,7 +86,7 @@ async def on_ready():
     #     msg_header="**30 Days ML Challenge**",
     # )
             
-    await notify_by_timezone.start()
+    # await notify_by_timezone.start()
 
     await send_weekly_leaderboard.start()
 
@@ -216,10 +216,11 @@ async def user_goals(interaction):
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
 
 
-@tasks.loop(hours=1)
-async def notify_by_timezone():
-    await send_daily_notifications(client)
-    
+## This will be replaced with email notifications
+# @tasks.loop(hours=1)
+# async def notify_by_timezone():
+#     await send_daily_notifications(client)
+
 
 @tasks.loop(hours=24)
 async def send_weekly_leaderboard():
@@ -266,7 +267,7 @@ async def init():
     return await asyncio.gather(
         client.start(DISCORD_TOKEN),
         process_event_collection(),
-        collect_submissions_automatically(),
+        collect_submissions_automatically(client),
     )
 
     

@@ -334,10 +334,18 @@ async def create_event(user_id, event_type, payload):
         return event
 
 
-async def get_external_platform(platform_name):
+@alru_cache(maxsize=1000)
+async def get_external_platform(platform_name) -> Optional[ExternalPlatform]:
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(ExternalPlatform).where(
             ExternalPlatform.platform_name == platform_name))).first()
+    
+
+@alru_cache(maxsize=1000)
+async def get_external_platform_by_id(platform_id) -> Optional[ExternalPlatform]:
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(select(ExternalPlatform).where(
+            ExternalPlatform.platform_id == platform_id))).first()
 
 
 async def create_external_platform_connection(user_id, platform_id, user_name, user_data=None):
@@ -358,3 +366,13 @@ async def list_external_platform_connections():
     async with DB_ENGINE.begin() as conn:
         return (await conn.execute(select(ExternalPlatformConnection))).fetchall()
     
+
+async def set_external_platform_connection_user_data(connection_id, user_data):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(ExternalPlatformConnection).where(
+            ExternalPlatformConnection.connection_id == connection_id,
+        ).values(
+            user_data=user_data,
+        ))
+
+    logger.info(f"Updated user data for external platform connection {connection_id}")
