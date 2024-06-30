@@ -9,6 +9,7 @@ from datetime import (
 
 import dotenv
 import discord
+import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
@@ -42,6 +43,18 @@ DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
 CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
+SENTRY_DSN = os.environ['SENTRY_DSN']
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
 
 
 intents = discord.Intents.all()
@@ -87,7 +100,6 @@ async def on_ready():
     # )
             
     # await notify_by_timezone.start()
-
     await send_weekly_leaderboard.start()
 
 
