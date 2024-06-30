@@ -13,15 +13,18 @@ from discord import app_commands
 from discord.ext import tasks
 
 from src.database import (
-    get_user_goals,
     init_db,
     get_goal,
     ensure_user,
     get_category,
     new_submission,
+    get_user_goals,
 )
 from src.buttons import TrackSettingsView
+from src.metrics_collection.events import process_event_collection, save_event
+from src.models import EventType
 from src.notifications.notifications import send_daily_notifications
+from src.submissions.automated_collection import collect_submissions_automatically
 from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
@@ -62,12 +65,12 @@ async def on_ready():
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
 
-    await _upsert_message_in_channel(
-        client, 
-        view=TrackSettingsView(), 
-        channel_id=SETTINGS_CHANNEL_ID,
-        msg_header="**Pick your goal:**",
-    )
+    # await _upsert_message_in_channel(
+    #     client, 
+    #     view=TrackSettingsView(), 
+    #     channel_id=SETTINGS_CHANNEL_ID,
+    #     msg_header="**Pick your goal:**",
+    # )
     
     await _upsert_message_in_channel(
         client, 
@@ -201,6 +204,8 @@ async def stats_command(interaction):
 )
 async def user_goals(interaction):
     await interaction.response.defer(ephemeral=False, thinking=True)
+    
+    await ensure_user(interaction.user)
 
     goals = await get_user_goals(interaction.user.id)
     if goals:
@@ -246,7 +251,7 @@ async def send_weekly_leaderboard():
 
     msg = "\n".join(msg_parts)
 
-    await channel.send(msg)
+    # await channel.send(msg)
     logging.info('Successfully sent weekly leaderboard')
 
 
@@ -256,10 +261,14 @@ async def init():
         raise Exception("Please set the DATABASE_URL environment variable")
 
     await init_db(DATABASE_URL)
-    
     discord.utils.setup_logging()
-    return await client.start(DISCORD_TOKEN)
+    
+    return await asyncio.gather(
+        client.start(DISCORD_TOKEN),
+        process_event_collection(),
+        collect_submissions_automatically(),
+    )
 
-
+    
 if __name__ == "__main__":
     asyncio.run(init())

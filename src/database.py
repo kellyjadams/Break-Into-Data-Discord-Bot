@@ -22,16 +22,17 @@ from async_lru import alru_cache
 from src.models import (
     User,
     Goal,
+    Event,
     Category,
     Submission,
     Leaderboard,
+    ExternalPlatform,
+    ExternalPlatformConnection,
 )
 
 
 # Setting up logger
 logger = logging.getLogger(__name__)
-
-Base = declarative_base()
 
 DB_ENGINE = None
 
@@ -44,6 +45,12 @@ async def init_db(database_url: str):
             database_url,
             echo=False,
         )
+        
+        # create tables
+        # async with DB_ENGINE.begin() as conn:
+        #     from src.models import Base
+        #     await conn.run_sync(Base.metadata.create_all)
+        
         logger.info("Database initialized successfully.")
     except Exception:
         logger.exception("Failed to initialize database")
@@ -312,3 +319,42 @@ async def list_submissions_by_voice_channel(voice_channel) -> Submission:
                 .where(Submission.voice_channel == voice_channel)
                 .order_by(Submission.created_at)
         )).fetchall()
+    
+    
+async def create_event(user_id, event_type, payload):
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(insert(Event).values(
+            user_id=user_id,
+            event_type=event_type,
+            payload=payload,
+        ).returning(Event))
+
+        event = cursor.fetchone()
+        logger.info(f"New event for user {user_id}: {event_type}")
+        return event
+
+
+async def get_external_platform(platform_name):
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(select(ExternalPlatform).where(
+            ExternalPlatform.platform_name == platform_name))).first()
+
+
+async def create_external_platform_connection(user_id, platform_id, user_name, user_data=None):
+    async with DB_ENGINE.begin() as conn:
+        cursor = await conn.execute(insert(ExternalPlatformConnection).values(
+            user_id=user_id,
+            platform_id=platform_id,
+            user_name=user_name,
+            user_data=user_data,
+        ).returning(ExternalPlatformConnection))
+
+        connection = cursor.fetchone()
+        logger.info(f"New external platform connection for user {user_id}")
+        return connection
+
+
+async def list_external_platform_connections():
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(select(ExternalPlatformConnection))).fetchall()
+    
