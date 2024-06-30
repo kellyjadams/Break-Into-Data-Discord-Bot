@@ -78,12 +78,12 @@ async def on_ready():
 
     await tree.sync(guild=discord.Object(id=DISCORD_SERVER_ID))
 
-    # await _upsert_message_in_channel(
-    #     client, 
-    #     view=TrackSettingsView(), 
-    #     channel_id=SETTINGS_CHANNEL_ID,
-    #     msg_header="**Pick your goal:**",
-    # )
+    await _upsert_message_in_channel(
+        client, 
+        view=TrackSettingsView(), 
+        channel_id=SETTINGS_CHANNEL_ID,
+        msg_header="**Pick your goal:**",
+    )
     
     await _upsert_message_in_channel(
         client, 
