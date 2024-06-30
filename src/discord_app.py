@@ -91,15 +91,7 @@ async def on_ready():
         channel_id=SETTINGS_CHANNEL_ID,
         msg_header="**Connect external platforms:**",
     )
-    
-    # await _upsert_message_in_channel(
-    #     client, 
-    #     view=Challenge30DaysML(), 
-    #     channel_id=CHALLENGE_30DAYS_ML_CHANNEL_ID,
-    #     msg_header="**30 Days ML Challenge**",
-    # )
-            
-    # await notify_by_timezone.start()
+
     await send_weekly_leaderboard.start()
 
 
@@ -226,12 +218,6 @@ async def user_goals(interaction):
         await interaction.followup.send(f">>> Here are your current goals:\n{goals_message}", ephemeral=False)
     else:
         await interaction.followup.send("You currently have no active goals.", ephemeral=False)
-
-
-## This will be replaced with email notifications
-# @tasks.loop(hours=1)
-# async def notify_by_timezone():
-#     await send_daily_notifications(client)
 
 
 @tasks.loop(hours=24)
