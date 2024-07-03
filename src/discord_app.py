@@ -6,6 +6,7 @@ from datetime import (
     timedelta, 
     timezone
 )
+import random
 
 import dotenv
 import discord
@@ -42,11 +43,12 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
-CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
-SENTRY_DSN = os.environ['SENTRY_DSN']
+INTRODUCE_YOURSELF_CHANNEL_ID = 1198721493677392076
+# CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
+# SENTRY_DSN = os.environ['SENTRY_DSN']
 
 sentry_sdk.init(
-    dsn=SENTRY_DSN,
+    # dsn=SENTRY_DSN,
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     traces_sample_rate=1.0,
@@ -116,6 +118,10 @@ async def _upsert_message_in_channel(client, view, channel_id, msg_header):
 async def on_message(message):
     if message.author == client.user:
         return
+    
+    if message.channel.id == INTRODUCE_YOURSELF_CHANNEL_ID:
+        await message.add_reaction(random.choice(['👋🏽', '🙋🏻', '🫡', '💡', '🔥', '🙏🏻']))
+
     await process_discord_message(message, SUBMISSION_CHANNEL_ID)
 
 
