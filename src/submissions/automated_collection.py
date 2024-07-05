@@ -168,4 +168,4 @@ async def collect_submissions_automatically(client: discord.Client):
     while True:
         await _collect_submissions_automatically(client)
 
-        await asyncio.sleep(60 * 60 * 24)
+        await asyncio.sleep(60 * 60 * 1)
