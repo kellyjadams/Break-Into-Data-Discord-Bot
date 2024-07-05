@@ -49,6 +49,8 @@ class ConnectExternalPlatformModal(discord.ui.Modal):
         self.add_item(self.user_name_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+
         user, category = await asyncio.gather(
             ensure_user(interaction.user),
             get_category_by_name(LEETCODE_CATEGORY_NAME),
