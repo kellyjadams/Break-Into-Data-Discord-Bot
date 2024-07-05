@@ -43,7 +43,10 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
-INTRODUCE_YOURSELF_CHANNEL_ID = 1198721493677392076
+INTRODUCE_YOURSELF_CHANNEL_ID = 1198721493677392076 # 1197631394621435905
+SHARE_YOUR_WINS_CHANNEL_ID = 1198721493677392076 # 1189793917898608671
+CONTENT_CREATION_CHANNEL_ID = 1198721493677392076 # 1204645095047962675
+SHARE_YOUR_PROJECTS_CHANNEL_ID = 1198721493677392076 # 1214612245711945798
 # CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
 # SENTRY_DSN = os.environ['SENTRY_DSN']
 
@@ -114,15 +117,44 @@ async def _upsert_message_in_channel(client, view, channel_id, msg_header):
         logging.info(f'No existing message. Sent new message ({msg_header}).')
 
 
+async def _react_with_emoji(message: discord.Message):
+    if message.channel.id == INTRODUCE_YOURSELF_CHANNEL_ID:
+        await message.add_reaction(random.choice(['👋🏽', '🙋🏻', '🤝', '💡', '😊', '👍']))
+    if message.channel.id == SHARE_YOUR_WINS_CHANNEL_ID or message.channel.id == SHARE_YOUR_PROJECTS_CHANNEL_ID:
+        await message.add_reaction(random.choice(['🪅', '❤️‍🔥', '👏🏾', '🖥️', '📊', '🍾']))
+    if message.channel.id == CONTENT_CREATION_CHANNEL_ID:
+        await message.add_reaction(random.choice(['☄️', '🖥️', '📈', '🌟', '📝', '💻']))
+
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
     
-    if message.channel.id == INTRODUCE_YOURSELF_CHANNEL_ID:
-        await message.add_reaction(random.choice(['👋🏽', '🙋🏻', '🫡', '💡', '🔥', '🙏🏻']))
-
+    # Only react to messages that are not replies or system messages
+    if message.type == discord.MessageType.default and message.reference is None:
+        await _react_with_emoji(message)
+    
     await process_discord_message(message, SUBMISSION_CHANNEL_ID)
+
+
+@client.event
+async def on_member_join(member):
+    system_channel = member.guild.system_channel
+
+    if system_channel is not None:
+        welcome_message = f"Welcome to the server, {member.mention}! 👋 We're glad to have you here."
+        
+        # Create an embed for a fancier welcome message
+        embed = discord.Embed(
+            title="New Member!",
+            description=welcome_message,
+            color=discord.Color.random(),
+        )
+        embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
+        embed.add_field(name="Member Count", value=f"We now have {member.guild.member_count} members!")
+
+        await system_channel.send(embed=embed)
 
 
 @client.event
@@ -137,6 +169,17 @@ async def on_error(event, *args, **kwargs):
 
 tree = app_commands.CommandTree(client)
 
+
+@tree.command(
+    name="simulate_join", 
+    description="Simulates a member joining for testing purposes",
+    guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+@app_commands.checks.has_permissions(administrator=True)
+async def simulate_join(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await on_member_join(interaction.user)
+    await interaction.followup.send("Simulated join event.", ephemeral=True)
 
 @tree.command(
     name="submit",
