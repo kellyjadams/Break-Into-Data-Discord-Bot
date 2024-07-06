@@ -14,7 +14,7 @@ openai_client = AsyncOpenAI(
 
 
 PROMPT = """Write a 1 sentence witty data-related welcome message for {username} who just joined the \"Break Into Data\" discord server. 
-Also provide a title seperated by a newline. Do not output anything else.
+Also provide a title seperated by a newline. Do not include the name in the title. Do not output anything else.
 """
 
 
@@ -46,5 +46,28 @@ async def generate_welcome_message(username: str) -> str:
     )
 
     message = response.choices[0].message.content
+    print(message)
 
     return process_welcome_message(message)
+
+
+async def get_ai_response(question: str) -> str:
+    try:
+        response = await openai_client.chat.completions.create(
+            model="gpt-4o-2024-05-13",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a helpful assistant."
+                },
+                {
+                    "role": "user", 
+                    "content": question
+                }
+            ],
+            temperature=0.7,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"Error in getting AI response: {e}")
+        return "I'm sorry, I couldn't generate a response at the moment."

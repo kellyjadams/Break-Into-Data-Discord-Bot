@@ -14,7 +14,7 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
-from llm_welcome import generate_welcome_message
+from llm_features import generate_welcome_message, get_ai_response
 from src.database import (
     init_db,
     get_goal,
@@ -153,7 +153,7 @@ async def on_member_join(member):
             color=discord.Color.random(),
         )
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
-        embed.add_field(name="Member Number", value=f"You are member #{member.guild.member_count} in this server!")
+        embed.set_footer(text=f"👥 You are member #{member.guild.member_count} in this server!")
 
         await system_channel.send(embed=embed)
 
@@ -181,6 +181,28 @@ async def simulate_join(interaction: discord.Interaction):
     await interaction.response.defer(ephemeral=True)
     await on_member_join(interaction.user)
     await interaction.followup.send("Simulated join event.", ephemeral=True)
+
+
+@tree.command(
+    name="ask",
+    description="Ask a question and get an AI-powered response",
+    guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+async def ask(interaction: discord.Interaction, question: str):
+    await interaction.response.defer(thinking=True)
+    
+    ai_response = await get_ai_response(question)
+    
+    embed = discord.Embed(
+        title=question,
+        description=ai_response,
+        color=discord.Color.purple(),
+    )
+    embed.set_author(name=f"Question from {interaction.user.name}", icon_url=interaction.user.avatar.url)
+    embed.set_footer(text="🤖 AI generated response from GPT-4o")
+    
+    await interaction.followup.send(embed=embed)
+
 
 @tree.command(
     name="submit",
