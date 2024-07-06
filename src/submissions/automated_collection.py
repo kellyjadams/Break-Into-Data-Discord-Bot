@@ -100,6 +100,58 @@ async def _fetch_external_platform_data(
     return counts
 
 
+async def update_external_platform_data(
+    session: aiohttp.ClientSession,
+    categories: dict,
+    external_connection: ExternalPlatformConnection,
+    notification_channel=None,
+):
+    data = await _fetch_external_platform_data(
+        session, external_connection
+    )
+    if data is None:
+        return False
+
+    await set_external_platform_connection_user_data(
+        connection_id=external_connection.connection_id,
+        user_data=data,
+    )
+
+    if not external_connection.user_data:
+        return True
+    
+    category = categories[external_connection.platform_id]
+    diffs_sum = sum(data.values()) - sum(external_connection.user_data.values())
+
+    if diffs_sum == 0:
+        logger.info(f"No changes in platform {external_connection.platform_id} for user {external_connection.user_id}")
+        return True
+
+    goal = await get_goal(category.category_id, external_connection.user_id)
+    if not goal:
+        logger.error(f"Goal not found for user {external_connection.user_id} and category {category.category_id}")
+        return False
+
+    await new_submission(
+        user_id=external_connection.user_id,
+        goal_id=goal.goal_id,
+        proof_url=None,
+        amount=diffs_sum,
+    )
+
+    platform = await get_external_platform_by_id(external_connection.platform_id)
+    if not platform:
+        logger.error(f"External platform {external_connection.platform_id} not found")
+        return False
+
+    user = await get_user(external_connection.user_id)
+
+    if notification_channel is not None:
+        problems_form = "prolem" if diffs_sum == 1 else "problems"
+        await notification_channel.send(f"User {user.username} solved {diffs_sum} {problems_form} on {platform.platform_name}")
+
+    return True
+
 
 async def _collect_submissions_automatically(client: discord.Client):
     logger.info("Fetching data from external platforms")
@@ -120,45 +172,10 @@ async def _collect_submissions_automatically(client: discord.Client):
     
     async with session:            
         for external_connection in external_connection:
-            data = await _fetch_external_platform_data(
-                session, external_connection
-            )
-            if data is None:
-                continue
-
-            if external_connection.user_data:
-                category = categories[external_connection.platform_id]
-                diffs_sum = sum(data.values()) - sum(external_connection.user_data.values())
-
-                if diffs_sum == 0:
-                    logger.info(f"No changes in platform {external_connection.platform_id} for user {external_connection.user_id}")
-                    continue
-
-                goal = await get_goal(category.category_id, external_connection.user_id)
-                if not goal:
-                    logger.error(f"Goal not found for user {external_connection.user_id} and category {category.category_id}")
-                    continue
-
-                await new_submission(
-                    user_id=external_connection.user_id,
-                    goal_id=goal.goal_id,
-                    proof_url=None,
-                    amount=diffs_sum,
-                )
-
-                platform = await get_external_platform_by_id(external_connection.platform_id)
-                if not platform:
-                    logger.error(f"External platform {external_connection.platform_id} not found")
-                    continue
-
-                user = await get_user(external_connection.user_id)
-
-                problems_form = "prolem" if diffs_sum == 1 else "problems"
-                await notification_channel.send(f"User {user.username} solved {diffs_sum} {problems_form} on {platform.platform_name}")
-
-            await set_external_platform_connection_user_data(
-                connection_id=external_connection.connection_id,
-                user_data=data,
+            await update_external_platform_data(
+                session,
+                categories,
+                external_connection,
             )
 
 
