@@ -19,7 +19,7 @@ Also provide a title seperated by a newline. Do not output anything else.
 
 
 def process_welcome_message(message: str) -> str:
-    splits = message.split("\n")
+    splits = message.split("\n\n")
     message = splits[1].strip()
 
     if 'title:' in splits[0].lower():
@@ -46,6 +46,5 @@ async def generate_welcome_message(username: str) -> str:
     )
 
     message = response.choices[0].message.content
-    print(message)
 
     return process_welcome_message(message)
