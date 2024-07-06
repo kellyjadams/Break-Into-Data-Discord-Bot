@@ -3,7 +3,7 @@ import logging
 import discord
 
 from src.database import (
-    create_external_platform_connection,
+    upsert_external_platform_connection,
     get_external_platform,
     new_goal,
     ensure_user, 
@@ -80,14 +80,15 @@ class ConnectExternalPlatformModal(discord.ui.Modal):
         
         platform = await get_external_platform(self.platform_name)
         
-        await create_external_platform_connection(
+        await upsert_external_platform_connection(
             user_id=user.user_id,
             platform_id=platform.platform_id,
             user_name=self.user_name_input.value,
             user_data={},
         )
 
-        await interaction.followup.send(f"{self.platform_name} is connected!", ephemeral=True)
+        msg = f"{self.platform_name} is connected!\nPlease allow up to 1h to sync the data."
+        await interaction.followup.send(msg, ephemeral=True)
         logger.info(f"External platform {self.platform_name} connected for user {interaction.user}")
 
 

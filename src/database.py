@@ -348,7 +348,34 @@ async def get_external_platform_by_id(platform_id) -> Optional[ExternalPlatform]
             ExternalPlatform.platform_id == platform_id))).first()
 
 
-async def create_external_platform_connection(user_id, platform_id, user_name, user_data=None):
+async def get_external_platform_connection(user_id, platform_id) -> Optional[ExternalPlatformConnection]:
+    async with DB_ENGINE.begin() as conn:
+        return (await conn.execute(select(ExternalPlatformConnection).where(
+            ExternalPlatformConnection.user_id == user_id,
+            ExternalPlatformConnection.platform_id == platform_id,
+        ))).first()
+    
+
+async def update_external_platform_connection(connection_id, user_name, user_data):
+    async with DB_ENGINE.begin() as conn:
+        await conn.execute(update(ExternalPlatformConnection).where(
+            ExternalPlatformConnection.connection_id == connection_id,
+        ).values(
+            user_name=user_name,
+            user_data=user_data,
+        ))
+
+    logger.info(f"Updated user data for external platform connection {connection_id}")
+
+
+async def upsert_external_platform_connection(user_id, platform_id, user_name, user_data=None):
+    # fetch the connection first
+    connection = await get_external_platform_connection(user_id, platform_id)
+    if connection:
+        # update the user data
+        await update_external_platform_connection(connection.connection_id, user_name, user_data)
+        return connection
+
     async with DB_ENGINE.begin() as conn:
         cursor = await conn.execute(insert(ExternalPlatformConnection).values(
             user_id=user_id,
