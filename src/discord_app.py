@@ -14,6 +14,7 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
+from llm_welcome import generate_welcome_message
 from src.database import (
     init_db,
     get_goal,
@@ -143,16 +144,16 @@ async def on_member_join(member):
     system_channel = member.guild.system_channel
 
     if system_channel is not None:
-        welcome_message = f"Welcome to the server, {member.mention}! 👋 We're glad to have you here."
+        title, welcome_message = await generate_welcome_message(member.mention)
         
         # Create an embed for a fancier welcome message
         embed = discord.Embed(
-            title="New Member!",
+            title=title,
             description=welcome_message,
             color=discord.Color.random(),
         )
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
-        embed.add_field(name="Member Count", value=f"We now have {member.guild.member_count} members!")
+        embed.add_field(name="Member Number", value=f"You are member #{member.guild.member_count} in this server!")
 
         await system_channel.send(embed=embed)
 
