@@ -9,7 +9,6 @@ openai_client = AsyncOpenAI(
     api_key=os.environ["OPENAI_API_KEY"]
 )
 
-# generate many examples and use them. iteratively 
 
 async def get_ai_response(question: str) -> str:
     try:
