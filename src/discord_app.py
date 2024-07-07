@@ -14,7 +14,7 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
-from llm_features import get_ai_response
+from llm_features import get_groq_response
 from src.database import (
     init_db,
     get_goal,
@@ -116,11 +116,12 @@ async def _upsert_message_in_channel(client, view, channel_id, msg_header):
 
 
 async def _react_with_emoji(message: discord.Message):
-    if message.channel.id == INTRODUCE_YOURSELF_CHANNEL_ID:
+    channel_id = str(message.channel.id)
+    if channel_id == INTRODUCE_YOURSELF_CHANNEL_ID:
         await message.add_reaction(random.choice(['👋🏽', '🙋🏻', '🤝', '💡', '😊', '👍']))
-    if message.channel.id == SHARE_YOUR_WINS_CHANNEL_ID or message.channel.id == SHARE_YOUR_PROJECTS_CHANNEL_ID:
+    if channel_id == SHARE_YOUR_WINS_CHANNEL_ID or channel_id == SHARE_YOUR_PROJECTS_CHANNEL_ID:
         await message.add_reaction(random.choice(['🪅', '❤️‍🔥', '👏🏾', '🖥️', '📊', '🍾']))
-    if message.channel.id == CONTENT_CREATION_CHANNEL_ID:
+    if channel_id == CONTENT_CREATION_CHANNEL_ID:
         await message.add_reaction(random.choice(['☄️', '🖥️', '📈', '🌟', '📝', '💻']))
 
 
@@ -173,7 +174,7 @@ async def simulate_join(interaction: discord.Interaction):
 async def ask(interaction: discord.Interaction, question: str):
     await interaction.response.defer(thinking=True)
     
-    ai_response = await get_ai_response(question)
+    ai_response = await get_groq_response(question)
     
     embed = discord.Embed(
         title=question,
@@ -181,7 +182,7 @@ async def ask(interaction: discord.Interaction, question: str):
         color=discord.Color.purple(),
     )
     embed.set_author(name=f"Question from {interaction.user.name}", icon_url=interaction.user.avatar.url)
-    embed.set_footer(text="🤖 AI generated response from GPT-4o")
+    embed.set_footer(text="🤖 AI generated response from Groq [LLaMA3 8b]")
     
     await interaction.followup.send(embed=embed)
 
