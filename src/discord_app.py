@@ -1,5 +1,6 @@
 import os
 import asyncio
+import json
 import logging
 from datetime import (
     datetime, 
@@ -14,7 +15,7 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
-from llm_features import generate_welcome_message, get_ai_response
+from llm_features import get_ai_response
 from src.database import (
     init_db,
     get_goal,
@@ -44,15 +45,15 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
-INTRODUCE_YOURSELF_CHANNEL_ID = 1198721493677392076 # 1197631394621435905
-SHARE_YOUR_WINS_CHANNEL_ID = 1198721493677392076 # 1189793917898608671
-CONTENT_CREATION_CHANNEL_ID = 1198721493677392076 # 1204645095047962675
-SHARE_YOUR_PROJECTS_CHANNEL_ID = 1198721493677392076 # 1214612245711945798
+INTRODUCE_YOURSELF_CHANNEL_ID = os.environ['INTRODUCE_YOURSELF_CHANNEL_ID']
+SHARE_YOUR_WINS_CHANNEL_ID = os.environ['SHARE_YOUR_WINS_CHANNEL_ID']
+CONTENT_CREATION_CHANNEL_ID = os.environ['CONTENT_CREATION_CHANNEL_ID']
+SHARE_YOUR_PROJECTS_CHANNEL_ID = os.environ['SHARE_YOUR_PROJECTS_CHANNEL_ID']
 # CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
-# SENTRY_DSN = os.environ['SENTRY_DSN']
+SENTRY_DSN = os.environ['SENTRY_DSN']
 
 sentry_sdk.init(
-    # dsn=SENTRY_DSN,
+    dsn=SENTRY_DSN,
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     traces_sample_rate=1.0,
@@ -62,6 +63,9 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 )
 
+with open('./src/data/welcome_messages.json', 'r') as f:
+    welcome_messages = json.load(f)
+counter = 0
 
 intents = discord.Intents.all()
 client = discord.Client(
@@ -141,15 +145,18 @@ async def on_message(message):
 
 @client.event
 async def on_member_join(member):
+    global counter
     system_channel = member.guild.system_channel
 
     if system_channel is not None:
-        title, welcome_message = await generate_welcome_message(member.mention)
+        title = welcome_messages['titles'][counter]
+        message = welcome_messages['messages'][counter].format(member=member.mention)
+
+        counter = (counter + 1) % len(welcome_messages['messages'])
         
-        # Create an embed for a fancier welcome message
         embed = discord.Embed(
             title=title,
-            description=welcome_message,
+            description=message,
             color=discord.Color.random(),
         )
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
