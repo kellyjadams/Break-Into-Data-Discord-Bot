@@ -1,6 +1,5 @@
 import os
 import asyncio
-import json
 import logging
 from datetime import (
     datetime, 
@@ -25,16 +24,14 @@ from src.database import (
     get_user_goals,
 )
 from src.buttons import TrackSettingsView
-from src.metrics_collection.events import process_event_collection, save_event
-from src.models import EventType
-from src.notifications.notifications import send_daily_notifications
+from src.greet_newcomer import greet_newcomer
+from src.metrics_collection.events import process_event_collection
 from src.submissions.automated_collection import collect_submissions_automatically
 from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
 from src.submissions.voice_submissions import process_voice_channel_activity
 from src.ui.connected_platforms import ConnectExternalPlatform
-from src.ui.ml_30days import Challenge30DaysML
 
 
 dotenv.load_dotenv()
@@ -62,10 +59,6 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
 )
-
-with open('./src/data/welcome_messages.json', 'r') as f:
-    welcome_messages = json.load(f)
-counter = 0
 
 intents = discord.Intents.all()
 client = discord.Client(
@@ -139,30 +132,12 @@ async def on_message(message):
     # Only react to messages that are not replies or system messages
     if message.type == discord.MessageType.default and message.reference is None:
         await _react_with_emoji(message)
-    
-    await process_discord_message(message, SUBMISSION_CHANNEL_ID)
+        await process_discord_message(message, SUBMISSION_CHANNEL_ID)
 
 
 @client.event
 async def on_member_join(member):
-    global counter
-    system_channel = member.guild.system_channel
-
-    if system_channel is not None:
-        title = welcome_messages['titles'][counter]
-        message = welcome_messages['messages'][counter].format(member=member.mention)
-
-        counter = (counter + 1) % len(welcome_messages['messages'])
-        
-        embed = discord.Embed(
-            title=title,
-            description=message,
-            color=discord.Color.random(),
-        )
-        embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
-        embed.set_footer(text=f"👥 You are member #{member.guild.member_count} in this server!")
-
-        await system_channel.send(embed=embed)
+    await greet_newcomer(member)
 
 
 @client.event
