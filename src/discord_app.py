@@ -14,7 +14,6 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
-from llm_features import get_groq_response
 from src.database import (
     init_db,
     get_goal,
@@ -25,6 +24,7 @@ from src.database import (
 )
 from src.buttons import TrackSettingsView
 from src.greet_newcomer import greet_newcomer
+from src.llm_features import get_groq_response
 from src.metrics_collection.events import process_event_collection
 from src.submissions.automated_collection import collect_submissions_automatically
 from src.submissions.process_message import process_discord_message
