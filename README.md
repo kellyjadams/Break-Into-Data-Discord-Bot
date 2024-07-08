@@ -4,7 +4,6 @@ This Accountability bot is here to enhance your experience, helping you track yo
 
 ![image](images/system_diagram.png)
 
-
 ## Features
 
 - **Goal Tracking Across Various Tracks**: Set and track goals in multiple areas, including Fitness, Leetcode, Studying, Meditation, Content Creation, and more.
@@ -16,6 +15,7 @@ This Accountability bot is here to enhance your experience, helping you track yo
 ## Getting Started
 
 ### Complete Your Profile
+
 Before setting up your goals you have to create a profile. Include your name and your email address. 
 
 ### Setting Up Your Goals

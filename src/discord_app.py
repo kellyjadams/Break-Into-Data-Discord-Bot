@@ -6,6 +6,7 @@ from datetime import (
     timedelta, 
     timezone
 )
+import random
 
 import dotenv
 import discord
@@ -13,6 +14,7 @@ import sentry_sdk
 from discord import app_commands
 from discord.ext import tasks
 
+from llm_features import get_groq_response
 from src.database import (
     init_db,
     get_goal,
@@ -22,16 +24,14 @@ from src.database import (
     get_user_goals,
 )
 from src.buttons import TrackSettingsView
-from src.metrics_collection.events import process_event_collection, save_event
-from src.models import EventType
-from src.notifications.notifications import send_daily_notifications
+from src.greet_newcomer import greet_newcomer
+from src.metrics_collection.events import process_event_collection
 from src.submissions.automated_collection import collect_submissions_automatically
 from src.submissions.process_message import process_discord_message
 from src.analytics.personal import get_personal_statistics
 from src.analytics.leaderboard import get_weekly_leaderboard
 from src.submissions.voice_submissions import process_voice_channel_activity
 from src.ui.connected_platforms import ConnectExternalPlatform
-from src.ui.ml_30days import Challenge30DaysML
 
 
 dotenv.load_dotenv()
@@ -42,7 +42,11 @@ GENERAL_CHANNEL_ID = os.environ['DISCORD_GENERAL_CHANNEL_ID']
 DISCORD_SERVER_ID = os.environ['DISCORD_SERVER_ID']
 SUBMISSION_CHANNEL_ID = os.environ['SUBMISSION_CHANNEL_ID']
 # TODO: add this to config
-CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
+INTRODUCE_YOURSELF_CHANNEL_ID = os.environ['INTRODUCE_YOURSELF_CHANNEL_ID']
+SHARE_YOUR_WINS_CHANNEL_ID = os.environ['SHARE_YOUR_WINS_CHANNEL_ID']
+CONTENT_CREATION_CHANNEL_ID = os.environ['CONTENT_CREATION_CHANNEL_ID']
+SHARE_YOUR_PROJECTS_CHANNEL_ID = os.environ['SHARE_YOUR_PROJECTS_CHANNEL_ID']
+# CHALLENGE_30DAYS_ML_CHANNEL_ID = 1236400428724260996
 SENTRY_DSN = os.environ['SENTRY_DSN']
 
 sentry_sdk.init(
@@ -55,7 +59,6 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
 )
-
 
 intents = discord.Intents.all()
 client = discord.Client(
@@ -112,11 +115,30 @@ async def _upsert_message_in_channel(client, view, channel_id, msg_header):
         logging.info(f'No existing message. Sent new message ({msg_header}).')
 
 
+async def _react_with_emoji(message: discord.Message):
+    channel_id = str(message.channel.id)
+    if channel_id == INTRODUCE_YOURSELF_CHANNEL_ID:
+        await message.add_reaction(random.choice(['👋🏽', '🙋🏻', '🤝', '💡', '😊', '👍']))
+    if channel_id == SHARE_YOUR_WINS_CHANNEL_ID or channel_id == SHARE_YOUR_PROJECTS_CHANNEL_ID:
+        await message.add_reaction(random.choice(['🪅', '❤️‍🔥', '👏🏾', '🖥️', '📊', '🍾']))
+    if channel_id == CONTENT_CREATION_CHANNEL_ID:
+        await message.add_reaction(random.choice(['☄️', '🖥️', '📈', '🌟', '📝', '💻']))
+
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
-    await process_discord_message(message, SUBMISSION_CHANNEL_ID)
+    
+    # Only react to messages that are not replies or system messages
+    if message.type == discord.MessageType.default and message.reference is None:
+        await _react_with_emoji(message)
+        await process_discord_message(message, SUBMISSION_CHANNEL_ID)
+
+
+@client.event
+async def on_member_join(member):
+    await greet_newcomer(member)
 
 
 @client.event
@@ -130,6 +152,39 @@ async def on_error(event, *args, **kwargs):
 
 
 tree = app_commands.CommandTree(client)
+
+
+@tree.command(
+    name="simulate_join", 
+    description="Simulates a member joining for testing purposes",
+    guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+@app_commands.checks.has_permissions(administrator=True)
+async def simulate_join(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    await on_member_join(interaction.user)
+    await interaction.followup.send("Simulated join event.", ephemeral=True)
+
+
+@tree.command(
+    name="ask",
+    description="Ask a question and get an AI-powered response",
+    guild=discord.Object(id=DISCORD_SERVER_ID),
+)
+async def ask(interaction: discord.Interaction, question: str):
+    await interaction.response.defer(thinking=True)
+    
+    ai_response = await get_groq_response(question)
+    
+    embed = discord.Embed(
+        title=question,
+        description=ai_response,
+        color=discord.Color.purple(),
+    )
+    embed.set_author(name=f"Question from {interaction.user.name}", icon_url=interaction.user.avatar.url)
+    embed.set_footer(text="🤖 AI generated response from Groq [LLaMA3 8b]")
+    
+    await interaction.followup.send(embed=embed)
 
 
 @tree.command(
